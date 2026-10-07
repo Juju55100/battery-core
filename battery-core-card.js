@@ -1,4 +1,4 @@
-/* Battery Core Card v0.9.6 — standalone Home Assistant Lovelace card
+/* Battery Core Card v0.9.7 — standalone Home Assistant Lovelace card
  * Futuristic battery core with visual editor, adjustable scale and SOC ring.
  */
 
@@ -2116,12 +2116,18 @@ class BatteryCoreCard extends HTMLElement {
     const timeHint = this.querySelector("#timeHint");
     if (timeHint) timeHint.hidden = discharging;
 
-    const voltage = this._state(c.voltage, "—");
-    const temperature = this._state(c.temperature, "—");
-    const current = this._state(c.current, "—");
-    set("voltage", voltage === "—" ? "—" : `${voltage} V`);
-    set("temperature", temperature === "—" ? "—" : `${temperature} °C`);
-    set("current", current === "—" ? "—" : `${current} A`);
+    // Limit sensor precision without changing the underlying state.
+    const telemetry = (entity, decimals, unit) => {
+      const raw = String(this._state(entity, "")).trim();
+      const value = raw === "" ? NaN : Number(raw);
+      if (!Number.isFinite(value)) return "—";
+      const rounded = Number(value.toFixed(decimals));
+      const number = (Object.is(rounded, -0) ? 0 : rounded).toFixed(decimals);
+      return `${number.replace("-", "−")}\u00a0${unit}`;
+    };
+    set("voltage", telemetry(c.voltage, 2, "V"));
+    set("temperature", telemetry(c.temperature, 1, "°C"));
+    set("current", telemetry(c.current, 2, "A"));
 
     const solar = this._state(c.solar_power, "—");
     const house = this._state(c.house_power, "—");
