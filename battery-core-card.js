@@ -1,4 +1,4 @@
-/* Battery Core Card v0.5 — standalone Home Assistant Lovelace card
+/* Battery Core Card v0.6 — standalone Home Assistant Lovelace card
  * Futuristic battery core with visual editor, adjustable scale and SOC ring.
  */
 
@@ -754,6 +754,151 @@ battery-core-card .footer {
   }
 }
 
+
+/* =========================================================
+   V0.6 — LANDSCAPE + ENERGY FLOW
+   ========================================================= */
+battery-core-card .shell {
+  min-height:0 !important;
+}
+
+/* Real landscape: SOC | CORE | POWER */
+battery-core-card .main-grid,
+battery-core-card .shell.size-compact .main-grid,
+battery-core-card .shell.size-normal .main-grid,
+battery-core-card .shell.size-large .main-grid,
+battery-core-card .shell.size-fullscreen .main-grid {
+  display:grid !important;
+  grid-template-columns:30% 40% 30% !important;
+  align-items:center !important;
+  gap:0 !important;
+  min-height:0 !important;
+}
+battery-core-card .side.left { grid-column:1 !important; grid-row:1 !important; }
+battery-core-card .core-wrap { grid-column:2 !important; grid-row:1 !important; }
+battery-core-card .side.right { grid-column:3 !important; grid-row:1 !important; }
+
+battery-core-card .core-wrap {
+  min-height:280px !important;
+  height:calc(430px * var(--bc-scale)) !important;
+}
+battery-core-card .side.left,
+battery-core-card .side.right {
+  align-self:center !important;
+}
+
+/* Strong, visible horizontal floating energy surface exactly at SOC level */
+battery-core-card .liquid {
+  overflow:visible !important;
+}
+battery-core-card .wave {
+  top:-13px !important;
+  left:-35% !important;
+  width:170% !important;
+  height:28px !important;
+  border:0 !important;
+  border-radius:50% !important;
+  background:transparent !important;
+  box-shadow:none !important;
+}
+battery-core-card .wave::before {
+  content:"";
+  position:absolute;
+  left:0; right:0; top:10px;
+  height:7px;
+  border-radius:50%;
+  background:linear-gradient(90deg,
+    transparent 0%,
+    rgba(120,250,255,.55) 12%,
+    rgba(225,255,255,1) 45%,
+    rgba(80,235,255,.9) 72%,
+    transparent 100%);
+  box-shadow:
+    0 0 7px rgba(150,255,255,.95),
+    0 0 15px rgba(0,225,255,.8);
+  transform:rotate(-2deg);
+}
+battery-core-card .wave1 { animation:bcSurfaceA 2.8s ease-in-out infinite !important; }
+battery-core-card .wave2 { animation:bcSurfaceB 3.4s ease-in-out infinite !important; opacity:.55 !important; }
+
+/* Upward energy arrows inside battery when charging */
+battery-core-card .charge-arrows {
+  position:absolute;
+  inset:18px 0;
+  z-index:3;
+  pointer-events:none;
+  overflow:hidden;
+}
+battery-core-card .charge-arrows span {
+  position:absolute;
+  left:50%;
+  bottom:-28px;
+  width:22px;
+  height:22px;
+  margin-left:-11px;
+  border-left:5px solid rgba(125,255,255,.92);
+  border-top:5px solid rgba(125,255,255,.92);
+  transform:rotate(45deg);
+  filter:drop-shadow(0 0 6px #00eaff);
+  opacity:0;
+  animation:bcArrowRise 2.1s linear infinite;
+}
+battery-core-card .charge-arrows span:nth-child(2){animation-delay:-.7s}
+battery-core-card .charge-arrows span:nth-child(3){animation-delay:-1.4s}
+
+battery-core-card.discharging .charge-arrows span {
+  border-color:rgba(255,190,70,.95);
+  filter:drop-shadow(0 0 6px #ff9d00);
+  animation-name:bcArrowFall;
+}
+battery-core-card:not(.charging):not(.discharging) .charge-arrows span {
+  animation-play-state:paused;
+  opacity:0;
+}
+
+/* External bottom-to-top energy injection */
+battery-core-card.charging .energy-streams i {
+  animation-direction:normal !important;
+}
+battery-core-card.discharging .energy-streams i {
+  animation-direction:reverse !important;
+}
+
+@keyframes bcSurfaceA {
+  0%,100% { transform:translateX(-3%) translateY(1px) rotate(-1deg); }
+  50% { transform:translateX(3%) translateY(-3px) rotate(1deg); }
+}
+@keyframes bcSurfaceB {
+  0%,100% { transform:translateX(3%) translateY(-2px) rotate(1deg); }
+  50% { transform:translateX(-3%) translateY(2px) rotate(-1deg); }
+}
+@keyframes bcArrowRise {
+  0% { bottom:-28px; opacity:0; }
+  18% { opacity:.95; }
+  78% { opacity:.8; }
+  100% { bottom:92%; opacity:0; }
+}
+@keyframes bcArrowFall {
+  0% { bottom:92%; opacity:0; }
+  18% { opacity:.95; }
+  78% { opacity:.8; }
+  100% { bottom:-28px; opacity:0; }
+}
+
+/* Only stack on genuinely phone-sized cards. */
+@media (max-width:520px) {
+  battery-core-card .main-grid,
+  battery-core-card .shell.size-compact .main-grid,
+  battery-core-card .shell.size-normal .main-grid,
+  battery-core-card .shell.size-large .main-grid,
+  battery-core-card .shell.size-fullscreen .main-grid {
+    grid-template-columns:1fr !important;
+  }
+  battery-core-card .core-wrap { grid-column:1 !important; grid-row:1 !important; }
+  battery-core-card .side.left { grid-column:1 !important; grid-row:2 !important; }
+  battery-core-card .side.right { grid-column:1 !important; grid-row:3 !important; }
+}
+
 </style>
 
       <div class="scale-stage">
@@ -813,6 +958,9 @@ battery-core-card .footer {
                     <div class="wave wave1"></div>
                     <div class="wave wave2"></div>
                     <div class="particles"></div>
+                  </div>
+                  <div class="charge-arrows" aria-hidden="true">
+                    <span></span><span></span><span></span>
                   </div>
                   <div class="core-readout">
                     <span id="coreSoc">0%</span>
@@ -947,6 +1095,17 @@ battery-core-card .footer {
 
     const pbar = this.querySelector("#powerBar");
     if (pbar) pbar.style.width = `${Math.min(100, powerAbs / 10 * 100)}%`;
+
+    // Energy animation speed follows battery power:
+    // low power = calm, high power = fast.
+    const speed = Math.max(0.55, Math.min(2.4, 2.25 - powerAbs * 0.16));
+    this.querySelectorAll(".charge-arrows span").forEach((el, i) => {
+      el.style.animationDuration = `${speed}s`;
+      el.style.animationDelay = `${-(speed / 3) * i}s`;
+    });
+    this.querySelectorAll(".energy-streams i").forEach(el => {
+      el.style.animationDuration = `${Math.max(0.45, speed * 0.72)}s`;
+    });
 
     const left = this.querySelector("#flowLeft");
     const right = this.querySelector("#flowRight");
