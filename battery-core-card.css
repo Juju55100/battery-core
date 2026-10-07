@@ -642,3 +642,87 @@ battery-core-card .shell.size-fullscreen { padding:28px; }
   battery-core-card .side.left { grid-column:1; grid-row:2; padding:0; }
   battery-core-card .side.right { grid-column:1; grid-row:3; padding:0; }
 }
+
+
+/* === V0.9 : cœur lithium cylindrique inspiré du concept initial === */
+battery-core-card .side.right .power-value{
+  font-size:clamp(18px,calc(27px * var(--bc-scale,.75)),27px)!important;
+  white-space:nowrap!important;overflow:visible!important;text-overflow:clip!important
+}
+battery-core-card .battery-core.lithium-cylinder{
+  width:calc(146px * var(--bc-scale,.75))!important;
+  height:calc(300px * var(--bc-scale,.75))!important;
+  filter:drop-shadow(0 0 8px rgba(160,250,255,.8)) drop-shadow(0 0 25px rgba(0,150,255,.5))
+}
+battery-core-card .lithium-cylinder .glass{
+  left:18px!important;right:18px!important;top:34px!important;bottom:34px!important;
+  border:2px solid rgba(140,244,255,.92)!important;border-radius:19px!important;
+  background:linear-gradient(90deg,rgba(255,255,255,.12),rgba(0,55,90,.10) 24%,rgba(0,18,40,.08) 58%,rgba(170,250,255,.12))!important;
+  box-shadow:inset 9px 0 17px rgba(180,250,255,.11),inset -8px 0 18px rgba(0,75,155,.15),
+             inset 0 0 24px rgba(0,210,255,.18),0 0 17px rgba(0,220,255,.38)!important
+}
+battery-core-card .lithium-cylinder .glass::before,
+battery-core-card .lithium-cylinder .glass::after{
+  content:"";position:absolute;z-index:8;top:8px;bottom:8px;width:2px;border-radius:50%;
+  background:linear-gradient(transparent,rgba(235,255,255,.8),transparent);pointer-events:none
+}
+battery-core-card .lithium-cylinder .glass::before{left:9px;opacity:.75}
+battery-core-card .lithium-cylinder .glass::after{right:8px;opacity:.35}
+battery-core-card .lithium-cylinder .glass-shine{
+  position:absolute;z-index:8;left:24%;top:7%;width:13%;height:80%;border-radius:50%;
+  background:linear-gradient(transparent,rgba(255,255,255,.22),rgba(255,255,255,.03),transparent);
+  filter:blur(2px);pointer-events:none
+}
+battery-core-card .lithium-cylinder .cap{
+  left:8px!important;right:8px!important;height:38px!important;border-radius:50%/38%!important;
+  border:2px solid rgba(165,245,255,.95)!important;
+  background:linear-gradient(#eaffff 0%,#67c9ea 19%,#153b5d 45%,#07182d 61%,#55b5dc 80%,#dffcff 100%)!important;
+  box-shadow:inset 0 3px 6px rgba(255,255,255,.65),inset 0 -5px 8px rgba(0,15,40,.78),0 0 13px rgba(0,218,255,.55)!important;
+  z-index:10!important
+}
+battery-core-card .lithium-cylinder .cap-top{top:16px!important}
+battery-core-card .lithium-cylinder .cap-bottom{bottom:16px!important}
+battery-core-card .lithium-cylinder .terminal{
+  position:absolute;z-index:11;left:50%;transform:translateX(-50%);width:39%;height:15px;
+  border-radius:50%/45%;border:1px solid rgba(190,250,255,.9);
+  background:linear-gradient(#e6fdff,#4c9fc8 42%,#0a2948 53%,#8deaff);
+  box-shadow:0 0 10px rgba(0,215,255,.58)
+}
+battery-core-card .lithium-cylinder .terminal-top{top:5px}
+battery-core-card .lithium-cylinder .terminal-bottom{bottom:5px;opacity:.9}
+battery-core-card .lithium-cylinder .liquid{
+  background:radial-gradient(circle at 50% 78%,rgba(130,255,255,.35),transparent 28%),
+             linear-gradient(to top,rgba(0,78,255,.96),rgba(0,185,255,.84) 55%,rgba(0,247,255,.67))!important;
+  box-shadow:inset 0 0 19px rgba(110,250,255,.25),0 -4px 18px rgba(0,242,255,.88)!important
+}
+battery-core-card .lithium-cylinder .wave{left:-28%!important;width:156%!important;height:26px!important;top:-13px!important}
+battery-core-card .lithium-cylinder .wave::before{
+  height:6px!important;top:9px!important;
+  background:linear-gradient(90deg,transparent,rgba(0,225,255,.45) 10%,#8effff 29%,#fff 50%,#62f8ff 72%,rgba(0,210,255,.42) 90%,transparent)!important;
+  box-shadow:0 0 4px #fff,0 0 10px #4fffff,0 0 21px #00cfff,0 0 31px rgba(0,126,255,.72)!important
+}
+battery-core-card .lithium-cylinder .wave::after{top:12px!important;height:9px!important;background:rgba(75,238,255,.2)!important}
+battery-core-card .lithium-cylinder .energy-particles{
+  inset:42px 25px!important;z-index:6!important;border-radius:13px!important;overflow:hidden!important
+}
+battery-core-card .lithium-cylinder .energy-particles i{
+  width:3px!important;height:11px!important;background:linear-gradient(to top,transparent,#5ff8ff,#fff)!important;
+  box-shadow:0 0 5px #fff,0 0 11px #00eaff!important
+}
+battery-core-card .lithium-cylinder .core-readout{z-index:9!important;font-size:calc(32px * var(--bc-scale,.75))!important}
+battery-core-card .lithium-cylinder .core-readout span{text-shadow:0 0 5px #fff,0 0 15px #00dfff,0 0 25px #007cff}
+battery-core-card .energy-streams{
+  left:50%!important;bottom:0!important;width:calc(300px * var(--bc-scale,.75))!important;
+  height:calc(160px * var(--bc-scale,.75))!important;transform:translateX(-50%)!important;
+  filter:drop-shadow(0 0 11px rgba(0,215,255,.58))
+}
+battery-core-card.discharging .lithium-cylinder .liquid{
+  background:radial-gradient(circle at 50% 78%,rgba(255,220,100,.28),transparent 28%),
+             linear-gradient(to top,rgba(255,84,10,.9),rgba(255,158,18,.8) 55%,rgba(255,220,62,.7))!important;
+  box-shadow:0 -4px 18px rgba(255,167,20,.75)!important
+}
+battery-core-card.discharging .lithium-cylinder .wave::before{
+  background:linear-gradient(90deg,transparent,#ffb52e,#fff2a5,#ffce45,transparent)!important;
+  box-shadow:0 0 5px #fff4bc,0 0 13px #ffae1a,0 0 24px rgba(255,91,0,.7)!important
+}
+battery-core-card .core-wrap{min-height:calc(380px * var(--bc-scale,.75))!important}
