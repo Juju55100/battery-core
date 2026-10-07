@@ -301,7 +301,7 @@ class BatteryCoreCard extends HTMLElement {
       time_remaining: "sensor.temps_de_charge_restant_batterie",
       capacity: 29,
       title: "BATTERIE",
-      model: "HYPO 4"
+      model: "LIFEPO4"
     };
   }
 
@@ -315,7 +315,7 @@ class BatteryCoreCard extends HTMLElement {
     }
     this.config = {
       title: "BATTERIE",
-      model: "HYPO 4",
+      model: "LIFEPO4",
       capacity: 29,
       battery_soc: config.battery_soc,
       battery_power: config.battery_power,
