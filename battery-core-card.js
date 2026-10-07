@@ -1,4 +1,4 @@
-/* Battery Core Card v0.6 — standalone Home Assistant Lovelace card
+/* Battery Core Card v0.7 — standalone Home Assistant Lovelace card
  * Futuristic battery core with visual editor, adjustable scale and SOC ring.
  */
 
@@ -610,9 +610,18 @@ class BatteryCoreCard extends HTMLElement {
   }
 
   _powerNum(entity, fallback = 0) {
-    const n = parseFloat(this._state(entity, ""));
+    const stateObj = entity ? this._hass?.states?.[entity] : null;
+    const n = parseFloat(stateObj?.state);
     if (!Number.isFinite(n)) return fallback;
-    return Math.abs(n) > 50 ? n / 1000 : n;
+
+    // V0.7: use Home Assistant's declared unit instead of guessing.
+    const unit = String(stateObj?.attributes?.unit_of_measurement || "").trim().toLowerCase();
+    if (unit === "w" || unit === "watt" || unit === "watts") return n / 1000;
+    if (unit === "mw") return n / 1000000;
+    if (unit === "kw") return n;
+
+    // Fallback only for entities that do not expose a unit.
+    return Math.abs(n) > 100 ? n / 1000 : n;
   }
 
   _render() {
@@ -899,6 +908,88 @@ battery-core-card.discharging .energy-streams i {
   battery-core-card .side.right { grid-column:1 !important; grid-row:3 !important; }
 }
 
+
+/* V0.7 — clearer SOC surface and fine vertical energy particles */
+battery-core-card .glass { overflow:hidden !important; }
+battery-core-card .liquid {
+  overflow:visible !important;
+  transition:height .8s cubic-bezier(.2,.8,.2,1) !important;
+}
+battery-core-card .wave {
+  position:absolute !important;
+  left:-30% !important;
+  top:-10px !important;
+  width:160% !important;
+  height:22px !important;
+  border:0 !important;
+  border-radius:50% !important;
+  background:transparent !important;
+  box-shadow:none !important;
+}
+battery-core-card .wave::before {
+  content:"";
+  position:absolute;
+  left:0; top:7px; width:100%; height:5px;
+  border-radius:50%;
+  background:linear-gradient(90deg,transparent,rgba(185,255,255,.9),#fff,rgba(90,240,255,.9),transparent);
+  box-shadow:0 0 5px #fff,0 0 12px #00eaff,0 0 22px rgba(0,170,255,.6);
+}
+battery-core-card .wave1 { animation:bcWaveSurface1 2.7s ease-in-out infinite !important; }
+battery-core-card .wave2 { top:-7px !important; opacity:.45 !important; animation:bcWaveSurface2 3.3s ease-in-out infinite !important; }
+
+battery-core-card .energy-particles {
+  position:absolute;
+  inset:22px 10px;
+  z-index:3;
+  overflow:hidden;
+  pointer-events:none;
+  border-radius:20px;
+}
+battery-core-card .energy-particles i {
+  position:absolute;
+  bottom:-14px;
+  width:4px;
+  height:14px;
+  border-radius:999px;
+  opacity:0;
+  background:linear-gradient(to top,rgba(0,190,255,0),rgba(110,250,255,.95),#fff);
+  box-shadow:0 0 5px #fff,0 0 10px #00e1ff;
+  animation:bcParticleRise 2s linear infinite;
+}
+battery-core-card .energy-particles i:nth-child(1){left:16%}
+battery-core-card .energy-particles i:nth-child(2){left:31%;height:9px}
+battery-core-card .energy-particles i:nth-child(3){left:46%;height:17px}
+battery-core-card .energy-particles i:nth-child(4){left:60%;height:11px}
+battery-core-card .energy-particles i:nth-child(5){left:74%;height:14px}
+battery-core-card .energy-particles i:nth-child(6){left:86%;height:8px}
+battery-core-card.discharging .energy-particles i {
+  top:-14px; bottom:auto;
+  background:linear-gradient(to bottom,rgba(255,190,70,0),rgba(255,195,70,.95),#fff3b0);
+  box-shadow:0 0 5px #fff3b0,0 0 10px #ff911e;
+  animation-name:bcParticleFall;
+}
+battery-core-card:not(.charging):not(.discharging) .energy-particles i { opacity:0; animation-play-state:paused; }
+battery-core-card .charge-arrows { display:none !important; }
+
+@keyframes bcWaveSurface1 {
+  0%,100%{transform:translateX(-4%) translateY(1px) scaleY(.85)}
+  50%{transform:translateX(4%) translateY(-2px) scaleY(1.15)}
+}
+@keyframes bcWaveSurface2 {
+  0%,100%{transform:translateX(5%) translateY(-1px)}
+  50%{transform:translateX(-5%) translateY(2px)}
+}
+@keyframes bcParticleRise {
+  0%{transform:translateY(0) scale(.65);opacity:0}
+  12%{opacity:.9} 72%{opacity:.7}
+  100%{transform:translateY(-190px) scale(1.05);opacity:0}
+}
+@keyframes bcParticleFall {
+  0%{transform:translateY(0) scale(.65);opacity:0}
+  12%{opacity:.9} 72%{opacity:.7}
+  100%{transform:translateY(190px) scale(1.05);opacity:0}
+}
+
 </style>
 
       <div class="scale-stage">
@@ -959,8 +1050,8 @@ battery-core-card.discharging .energy-streams i {
                     <div class="wave wave2"></div>
                     <div class="particles"></div>
                   </div>
-                  <div class="charge-arrows" aria-hidden="true">
-                    <span></span><span></span><span></span>
+                  <div class="energy-particles" aria-hidden="true">
+                    <i></i><i></i><i></i><i></i><i></i><i></i>
                   </div>
                   <div class="core-readout">
                     <span id="coreSoc">0%</span>
@@ -1099,9 +1190,9 @@ battery-core-card.discharging .energy-streams i {
     // Energy animation speed follows battery power:
     // low power = calm, high power = fast.
     const speed = Math.max(0.55, Math.min(2.4, 2.25 - powerAbs * 0.16));
-    this.querySelectorAll(".charge-arrows span").forEach((el, i) => {
+    this.querySelectorAll(".energy-particles i").forEach((el, i) => {
       el.style.animationDuration = `${speed}s`;
-      el.style.animationDelay = `${-(speed / 3) * i}s`;
+      el.style.animationDelay = `${-(speed / 6) * i}s`;
     });
     this.querySelectorAll(".energy-streams i").forEach(el => {
       el.style.animationDuration = `${Math.max(0.45, speed * 0.72)}s`;
