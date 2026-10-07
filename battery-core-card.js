@@ -1,545 +1,39 @@
-/* Battery Core Card v0.7 — standalone Home Assistant Lovelace card
+/* Battery Core Card v0.8.1 — standalone Home Assistant Lovelace card
  * Futuristic battery core with visual editor, adjustable scale and SOC ring.
  */
 
-const BATTERY_CORE_STYLE = `battery-core-card {
-  display: block;
-  container-type: inline-size;
-  width: 100%;
-  --bc-bg: #020b18;
-  --bc-blue: #00d9ff;
-  --bc-blue2: #1689ff;
-  --bc-green: #55ff8a;
-  --bc-text: #eaf8ff;
-  --bc-muted: #80b7d2;
-}
-
-battery-core-card .battery-card {
-  overflow: hidden;
-  background: transparent !important;
-  box-shadow: none !important;
-  border: 0 !important;
-}
-
-battery-core-card .shell {
-  position: relative;
-  min-height: 760px;
-  padding: 22px;
-  color: var(--bc-text);
-  background:
-    radial-gradient(circle at 50% 44%, rgba(0, 150, 255, .13), transparent 26%),
-    radial-gradient(circle at 50% 100%, rgba(0, 110, 255, .11), transparent 34%),
-    linear-gradient(150deg, #020914 0%, #041529 48%, #020812 100%);
-  border: 1px solid rgba(0, 193, 255, .65);
-  border-radius: 22px;
-  box-sizing: border-box;
-  overflow: hidden;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-}
-
-battery-core-card .shell::before {
-  content:"";
-  position:absolute; inset:0;
-  background:
-    linear-gradient(rgba(0,170,255,.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,170,255,.035) 1px, transparent 1px);
-  background-size: 36px 36px;
-  mask-image: linear-gradient(to bottom, black, transparent 85%);
-  pointer-events:none;
-}
-
-battery-core-card .top-corner {
-  position:absolute; right:-70px; top:-70px;
-  width:190px; height:190px;
-  border:1px solid rgba(0,180,255,.5);
-  border-radius: 0 0 0 90px;
-  transform: rotate(45deg);
-  opacity:.45;
-}
-
-battery-core-card .header {
-  position:relative;
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  z-index:2;
-}
-
-battery-core-card .brand { display:flex; gap:14px; align-items:center; }
-battery-core-card .eyebrow { font-size:16px; letter-spacing:3px; font-weight:800; }
-battery-core-card .model { font-size:26px; font-weight:800; color:var(--bc-blue); letter-spacing:1px; }
-battery-core-card .capacity { color:#8dc6e7; font-size:17px; margin-top:2px; }
-battery-core-card .bolt { font-size:34px; color:#10d8ff; filter:drop-shadow(0 0 10px #00d9ff); }
-
-battery-core-card .battery-icon {
-  width:42px; height:62px; border:5px solid var(--bc-blue); border-radius:8px;
-  position:relative; box-sizing:border-box; box-shadow:0 0 15px rgba(0,217,255,.6), inset 0 0 12px rgba(0,217,255,.25);
-}
-battery-core-card .battery-icon::before {
-  content:""; position:absolute; left:10px; right:10px; top:-11px; height:8px;
-  border-radius:3px; background:var(--bc-blue);
-}
-battery-core-card .battery-icon span {
-  position:absolute; left:7px; right:7px; bottom:7px; height:62%;
-  background:linear-gradient(#00e7ff,#147cff);
-  box-shadow:0 0 10px #00d9ff;
-}
-
-battery-core-card .main-grid {
-  position:relative; z-index:2;
-  display:grid;
-  grid-template-columns: minmax(190px,1fr) minmax(360px,1.7fr) minmax(190px,1fr);
-  gap:16px;
-  align-items:center;
-  min-height:515px;
-}
-
-battery-core-card .side { z-index:5; }
-battery-core-card .metric {
-  border-bottom:1px solid rgba(40,153,220,.25);
-  padding:17px 8px;
-}
-battery-core-card .metric-title { color:#9ed0e9; font-size:13px; letter-spacing:1px; margin-bottom:10px; }
-battery-core-card .soc-line { display:flex; align-items:center; gap:10px; }
-battery-core-card .soc-line strong { font-size:38px; letter-spacing:-1px; }
-battery-core-card .mini-battery {
-  width:38px; height:38px; border:2px solid var(--bc-blue); border-radius:50%;
-  display:grid; place-items:center; color:var(--bc-blue); box-shadow:0 0 10px rgba(0,217,255,.4);
-}
-battery-core-card .bar, battery-core-card .power-bar {
-  height:9px; border-radius:10px; overflow:hidden; background:#0b2943; margin-top:12px;
-  border:1px solid rgba(0,217,255,.4);
-}
-battery-core-card .bar div, battery-core-card .power-bar div {
-  height:100%; width:0; transition:width .8s ease;
-  background:linear-gradient(90deg,#00bfff,#55ff8a);
-  box-shadow:0 0 12px #00d9ff;
-}
-battery-core-card .big-value { font-size:24px; font-weight:700; }
-battery-core-card .big-value small { font-size:14px; color:#9cc4d8; }
-battery-core-card .metric-symbol { color:var(--bc-blue); margin-right:7px; }
-battery-core-card .subvalue { color:#7ea8bf; font-size:13px; margin-top:4px; }
-battery-core-card .power-value { font-size:30px; font-weight:800; color:#a8f4ff; text-shadow:0 0 12px rgba(0,217,255,.45); }
-battery-core-card .state-label { color:var(--bc-green); font-weight:800; margin-top:4px; letter-spacing:1px; }
-battery-core-card .time-value { font-size:34px; font-weight:700; margin-top:5px; }
-battery-core-card .mini-grid { display:grid; gap:12px; }
-battery-core-card .mini-grid > div {
-  display:grid; grid-template-columns:26px 1fr auto; gap:5px; align-items:center;
-  color:#9ed0e9;
-}
-battery-core-card .mini-grid span { color:var(--bc-blue); font-size:20px; }
-battery-core-card .mini-grid label { font-size:12px; }
-battery-core-card .mini-grid b { color:white; font-size:14px; }
-
-battery-core-card .core-wrap {
-  position:relative; height:500px; display:grid; place-items:center;
-}
-battery-core-card .ring {
-  position:absolute; border-radius:50%; pointer-events:none;
-}
-battery-core-card .ring-outer {
-  width:430px; height:430px;
-  border:10px solid rgba(0,155,255,.15);
-  border-top-color:#00d9ff;
-  border-right-color:#1689ff;
-  box-shadow:0 0 20px rgba(0,217,255,.35), inset 0 0 20px rgba(0,120,255,.15);
-  animation: bcSpin 16s linear infinite;
-}
-battery-core-card .ring-mid {
-  width:365px; height:365px;
-  border:2px dashed rgba(0,205,255,.42);
-  box-shadow:0 0 25px rgba(0,160,255,.18);
-  animation: bcSpinReverse 22s linear infinite;
-}
-battery-core-card .ticks {
-  position:absolute; width:455px; height:455px; border-radius:50%;
-  background:repeating-conic-gradient(from 0deg, rgba(70,190,255,.5) 0deg 1deg, transparent 1deg 9deg);
-  mask-image:radial-gradient(circle, transparent 66%, black 67%, black 68%, transparent 69%);
-  opacity:.65;
-}
-battery-core-card .orbit {
-  position:absolute; width:445px; height:170px; border:1px solid rgba(0,195,255,.4); border-radius:50%;
-  transform:rotate(25deg); box-shadow:0 0 8px rgba(0,180,255,.2);
-}
-battery-core-card .orbit-b { transform:rotate(-35deg); opacity:.5; }
-
-battery-core-card .battery-core {
-  position:relative; z-index:8; width:145px; height:330px; margin-top:-5px;
-  filter:drop-shadow(0 0 25px rgba(0,204,255,.6));
-}
-battery-core-card .cap, battery-core-card .base {
-  position:absolute; left:7px; right:7px; height:36px; border-radius:24px;
-  background:linear-gradient(#d8fbff,#3981a4 35%,#082d49 60%,#77dfff);
-  border:2px solid #63e8ff; z-index:4;
-}
-battery-core-card .cap { top:0; }
-battery-core-card .base { bottom:0; }
-battery-core-card .glass {
-  position:absolute; left:15px; right:15px; top:24px; bottom:24px;
-  border:2px solid rgba(91,231,255,.85); border-radius:28px;
-  overflow:hidden; background:linear-gradient(90deg, rgba(0,180,255,.06), rgba(255,255,255,.08), rgba(0,180,255,.03));
-  box-shadow:inset 0 0 22px rgba(0,205,255,.25);
-}
-battery-core-card .liquid {
-  position:absolute; left:0; right:0; bottom:0; height:0%;
-  background:linear-gradient(to top, rgba(0,91,255,.95), rgba(0,216,255,.7));
-  box-shadow:0 -8px 30px rgba(0,225,255,.8);
-  transition:height 1s cubic-bezier(.2,.8,.2,1);
-  overflow:hidden;
-}
-battery-core-card .wave {
-  position:absolute; left:-30%; width:160%; height:35px; top:-15px;
-  border-radius:50%; border-top:3px solid rgba(130,250,255,.9);
-  animation:bcWave 4s ease-in-out infinite;
-}
-battery-core-card .wave2 { top:-10px; opacity:.35; animation-delay:-2s; }
-battery-core-card .particles {
-  position:absolute; inset:0;
-  background-image:
-    radial-gradient(circle, rgba(170,255,255,.9) 0 1px, transparent 2px),
-    radial-gradient(circle, rgba(255,255,255,.6) 0 1px, transparent 2px);
-  background-size:29px 41px, 43px 57px;
-  animation:bcRise 5s linear infinite;
-  opacity:.8;
-}
-battery-core-card .core-readout {
-  position:absolute; inset:0; display:grid; place-items:center; z-index:4;
-  font-size:35px; font-weight:800; text-shadow:0 0 15px #00d9ff;
-}
-battery-core-card .energy-streams {
-  position:absolute; bottom:18px; width:240px; height:130px; z-index:2;
-  display:flex; justify-content:center; gap:30px; overflow:hidden;
-}
-battery-core-card .energy-streams i {
-  width:5px; height:125px; border-radius:50%;
-  background:linear-gradient(transparent,#00eaff,transparent);
-  box-shadow:0 0 12px #00d9ff;
-  animation:bcStream 1.25s linear infinite;
-  opacity:.85;
-}
-battery-core-card .energy-streams i:nth-child(2){animation-delay:-.25s;height:90px}
-battery-core-card .energy-streams i:nth-child(3){animation-delay:-.5s;height:115px}
-battery-core-card .energy-streams i:nth-child(4){animation-delay:-.75s;height:75px}
-battery-core-card .energy-streams i:nth-child(5){animation-delay:-1s;height:105px}
-battery-core-card .energy-streams i:nth-child(6){animation-delay:-.4s;height:65px}
-
-battery-core-card .status-pill {
-  position:absolute; bottom:4px; color:#58ff92; font-size:11px; letter-spacing:2px;
-  padding:5px 11px; border:1px solid rgba(70,255,145,.35); border-radius:20px;
-  background:rgba(0,35,28,.45);
-}
-
-battery-core-card .flow {
-  position:relative; z-index:4; display:flex; align-items:center; justify-content:space-around;
-  gap:8px; padding:18px 20px; border:1px solid rgba(0,170,255,.4); border-radius:18px;
-  background:rgba(1,18,36,.72); box-shadow:inset 0 0 25px rgba(0,120,255,.08);
-}
-battery-core-card .flow-node { display:flex; gap:9px; align-items:center; min-width:130px; }
-battery-core-card .flow-node > span { font-size:28px; color:#5edfff; }
-battery-core-card .flow-node small { display:block; color:#8dbbd0; font-size:10px; letter-spacing:1px; }
-battery-core-card .flow-node b { font-size:18px; }
-battery-core-card .solar .sun { color:#ffd74a; }
-battery-core-card .flow-arrows { color:#1769b8; font-size:28px; letter-spacing:-6px; transition:.3s; }
-battery-core-card .flow-arrows.active { color:#00d9ff; text-shadow:0 0 14px #00d9ff; animation:bcArrow 1s linear infinite; }
-
-battery-core-card .footer {
-  position:relative; z-index:4; display:flex; justify-content:space-around; flex-wrap:wrap;
-  gap:12px; padding:17px 5px 2px; color:#82b5cf; font-size:12px;
-}
-battery-core-card .footer b { color:#bceeff; }
-battery-core-card .footer .clean b { color:#4dff89; }
-battery-core-card .dot { display:inline-block; width:9px; height:9px; background:#4dff89; border-radius:50%; box-shadow:0 0 10px #4dff89; margin-right:6px; }
-
-battery-core-card.discharging .liquid { background:linear-gradient(to top, rgba(255,116,0,.75), rgba(255,210,50,.7)); }
-battery-core-card.discharging .ring-outer { border-top-color:#ffb52e; border-right-color:#ff6b35; }
-battery-core-card.discharging .energy-streams i { animation-direction:reverse; background:linear-gradient(transparent,#ffb52e,transparent); box-shadow:0 0 12px #ff9d00; }
-battery-core-card.discharging .state-label,
-battery-core-card.discharging .status-pill { color:#ffc44c; border-color:rgba(255,180,40,.4); }
-
-battery-core-card.full .ring-outer { animation-duration:5s; box-shadow:0 0 35px rgba(0,230,255,.8), inset 0 0 30px rgba(0,190,255,.35); }
-battery-core-card.empty .liquid { box-shadow:none; }
-
-@keyframes bcSpin { to { transform:rotate(360deg); } }
-@keyframes bcSpinReverse { to { transform:rotate(-360deg); } }
-@keyframes bcWave { 0%,100%{transform:translateX(-2%) rotate(0deg)}50%{transform:translateX(2%) rotate(1deg)} }
-@keyframes bcRise { from{background-position:0 0,0 0} to{background-position:0 -220px,0 -300px} }
-@keyframes bcStream { from{transform:translateY(120px);opacity:0} 20%{opacity:1} 100%{transform:translateY(-30px);opacity:0} }
-@keyframes bcArrow { 50% { transform:translateX(6px); } }
-
-
-
-/* USER SCALE — controlled from the Home Assistant editor */
-battery-core-card .scale-stage { width:100%; overflow:hidden; }
-battery-core-card .scale-target {
-  zoom: var(--bc-user-scale, 1);
-  width: calc(100% / var(--bc-user-scale, 1));
-}
-
-/* Real SOC gauge on the outer ring */
-battery-core-card .ring-outer {
-  border:0;
-  padding:9px;
-  background:conic-gradient(
-    from -90deg,
-    #00eaff 0deg,
-    #1689ff var(--bc-soc-angle,0deg),
-    rgba(0,155,255,.12) var(--bc-soc-angle,0deg),
-    rgba(0,155,255,.12) 360deg
-  );
-  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
-  -webkit-mask-composite:xor;
-  mask-composite:exclude;
-  animation:none;
-  box-sizing:border-box;
-}
-battery-core-card.discharging .ring-outer {
-  background:conic-gradient(
-    from -90deg,
-    #ffd84a 0deg,
-    #ff7138 var(--bc-soc-angle,0deg),
-    rgba(255,130,40,.12) var(--bc-soc-angle,0deg),
-    rgba(255,130,40,.12) 360deg
-  );
-}
-
-
-/* =========================================================
-   V0.4 RESPONSIVE SCALE
-   The slider changes the component geometry, NOT browser zoom.
-   This keeps the core centered and prevents right-side clipping.
-   ========================================================= */
-battery-core-card .scale-stage,
-battery-core-card .scale-target {
-  width:100% !important;
-  overflow:visible !important;
-  zoom:1 !important;
-}
-
-battery-core-card .shell {
-  --bc-scale: 0.75;
-  --bc-core: calc(118px * var(--bc-scale));
-  --bc-core-h: calc(270px * var(--bc-scale));
-  --bc-ring: calc(350px * var(--bc-scale));
-  --bc-ring-mid: calc(295px * var(--bc-scale));
-  --bc-ticks: calc(372px * var(--bc-scale));
-  --bc-orbit-w: calc(360px * var(--bc-scale));
-  --bc-orbit-h: calc(140px * var(--bc-scale));
-}
-
-/* Keep the three columns inside the actual card width. */
-battery-core-card .main-grid {
-  grid-template-columns:
-    minmax(125px, 0.9fr)
-    minmax(210px, 1.25fr)
-    minmax(125px, 0.9fr) !important;
-  gap: clamp(4px, 1vw, 12px) !important;
-  min-width:0;
-}
-battery-core-card .main-grid > * { min-width:0; }
-battery-core-card .side { min-width:0; }
-battery-core-card .metric { min-width:0; overflow:hidden; }
-battery-core-card .power-value,
-battery-core-card .time-value,
-battery-core-card .big-value { white-space:nowrap; }
-
-battery-core-card .core-wrap {
-  height: calc(420px * var(--bc-scale)) !important;
-  min-height:250px;
-  width:100%;
-  min-width:0;
-  overflow:visible;
-}
-battery-core-card .ring-outer {
-  width:var(--bc-ring) !important;
-  height:var(--bc-ring) !important;
-}
-battery-core-card .ring-mid {
-  width:var(--bc-ring-mid) !important;
-  height:var(--bc-ring-mid) !important;
-}
-battery-core-card .ticks {
-  width:var(--bc-ticks) !important;
-  height:var(--bc-ticks) !important;
-}
-battery-core-card .orbit {
-  width:var(--bc-orbit-w) !important;
-  height:var(--bc-orbit-h) !important;
-}
-battery-core-card .battery-core {
-  width:var(--bc-core) !important;
-  height:var(--bc-core-h) !important;
-}
-battery-core-card .core-readout {
-  font-size:calc(29px * var(--bc-scale)) !important;
-}
-battery-core-card .energy-streams {
-  transform:scale(var(--bc-scale));
-  transform-origin:center bottom;
-}
-
-/* Scale typography gently: unlike zoom, it remains readable. */
-battery-core-card .shell .metric-title {
-  font-size:clamp(9px, calc(13px * var(--bc-scale)), 13px);
-}
-battery-core-card .shell .soc-line strong {
-  font-size:clamp(24px, calc(38px * var(--bc-scale)), 38px);
-}
-battery-core-card .shell .big-value {
-  font-size:clamp(17px, calc(24px * var(--bc-scale)), 24px);
-}
-battery-core-card .shell .power-value {
-  font-size:clamp(19px, calc(30px * var(--bc-scale)), 30px);
-}
-battery-core-card .shell .time-value {
-  font-size:clamp(20px, calc(34px * var(--bc-scale)), 34px);
-}
-
-/* Compact preset now controls layout density only; slider controls geometry. */
-battery-core-card .shell.size-compact {
-  min-height:0 !important;
-  padding:14px !important;
-}
-battery-core-card .shell.size-compact .header {
-  transform:none !important;
-}
-battery-core-card .shell.size-compact .main-grid {
-  min-height:0 !important;
-}
-battery-core-card .shell.size-compact .core-wrap {
-  height:calc(420px * var(--bc-scale)) !important;
-}
-battery-core-card .shell.size-compact .ring-outer {
-  width:var(--bc-ring) !important; height:var(--bc-ring) !important;
-}
-battery-core-card .shell.size-compact .ring-mid {
-  width:var(--bc-ring-mid) !important; height:var(--bc-ring-mid) !important;
-}
-battery-core-card .shell.size-compact .ticks {
-  width:var(--bc-ticks) !important; height:var(--bc-ticks) !important;
-}
-battery-core-card .shell.size-compact .orbit {
-  width:var(--bc-orbit-w) !important; height:var(--bc-orbit-h) !important;
-}
-battery-core-card .shell.size-compact .battery-core {
-  width:var(--bc-core) !important; height:var(--bc-core-h) !important;
-}
-battery-core-card .shell.size-compact .core-readout {
-  font-size:calc(29px * var(--bc-scale)) !important;
-}
-
-/* Narrow HA columns: stack info around a centered core rather than crop it. */
-@container (max-width: 650px) {
-  battery-core-card .main-grid {
-    grid-template-columns:1fr 1fr !important;
-  }
-  battery-core-card .core-wrap {
-    grid-column:1 / -1;
-    grid-row:1;
-  }
-}
-
-/* =========================================================
-   CARD SIZE PRESETS
-   compact / normal / large / fullscreen
-   ========================================================= */
-
-battery-core-card .shell.size-compact {
-  min-height: 540px;
-  padding: 14px;
-}
-battery-core-card .shell.size-compact .header { transform:scale(.86); transform-origin:top left; }
-battery-core-card .shell.size-compact .main-grid {
-  grid-template-columns: 145px minmax(230px, 1fr) 145px;
-  gap: 8px;
-  min-height: 350px;
-}
-battery-core-card .shell.size-compact .core-wrap { height:350px; }
-battery-core-card .shell.size-compact .ring-outer { width:290px; height:290px; border-width:7px; }
-battery-core-card .shell.size-compact .ring-mid { width:245px; height:245px; }
-battery-core-card .shell.size-compact .ticks { width:310px; height:310px; }
-battery-core-card .shell.size-compact .orbit { width:300px; height:115px; }
-battery-core-card .shell.size-compact .battery-core { width:96px; height:220px; }
-battery-core-card .shell.size-compact .cap,
-battery-core-card .shell.size-compact .base { height:27px; }
-battery-core-card .shell.size-compact .glass { left:11px; right:11px; top:19px; bottom:19px; }
-battery-core-card .shell.size-compact .core-readout { font-size:25px; }
-battery-core-card .shell.size-compact .energy-streams { width:180px; height:95px; }
-battery-core-card .shell.size-compact .metric { padding:10px 5px; }
-battery-core-card .shell.size-compact .metric-title { font-size:10px; margin-bottom:6px; }
-battery-core-card .shell.size-compact .soc-line strong { font-size:29px; }
-battery-core-card .shell.size-compact .big-value { font-size:19px; }
-battery-core-card .shell.size-compact .power-value { font-size:22px; }
-battery-core-card .shell.size-compact .time-value { font-size:24px; }
-battery-core-card .shell.size-compact .flow { padding:11px 12px; }
-battery-core-card .shell.size-compact .flow-node { min-width:95px; }
-battery-core-card .shell.size-compact .flow-node > span { font-size:22px; }
-battery-core-card .shell.size-compact .flow-node b { font-size:14px; }
-battery-core-card .shell.size-compact .footer { padding-top:10px; font-size:10px; }
-
-battery-core-card .shell.size-normal {
-  min-height: 650px;
-  padding: 18px;
-}
-battery-core-card .shell.size-normal .main-grid {
-  grid-template-columns: minmax(165px,1fr) minmax(300px,1.55fr) minmax(165px,1fr);
-  gap: 12px;
-  min-height: 430px;
-}
-battery-core-card .shell.size-normal .core-wrap { height:420px; }
-battery-core-card .shell.size-normal .ring-outer { width:350px; height:350px; border-width:8px; }
-battery-core-card .shell.size-normal .ring-mid { width:295px; height:295px; }
-battery-core-card .shell.size-normal .ticks { width:372px; height:372px; }
-battery-core-card .shell.size-normal .orbit { width:360px; height:140px; }
-battery-core-card .shell.size-normal .battery-core { width:118px; height:270px; }
-battery-core-card .shell.size-normal .core-readout { font-size:29px; }
-
-battery-core-card .shell.size-large {
-  min-height:760px;
-}
-
-battery-core-card .shell.size-fullscreen {
-  min-height:820px;
-  padding:28px;
-}
-battery-core-card .shell.size-fullscreen .main-grid {
-  grid-template-columns:minmax(220px,1fr) minmax(440px,1.8fr) minmax(220px,1fr);
-  min-height:560px;
-}
-battery-core-card .shell.size-fullscreen .core-wrap { height:550px; }
-battery-core-card .shell.size-fullscreen .ring-outer { width:480px; height:480px; }
-battery-core-card .shell.size-fullscreen .ring-mid { width:405px; height:405px; }
-battery-core-card .shell.size-fullscreen .ticks { width:505px; height:505px; }
-battery-core-card .shell.size-fullscreen .orbit { width:495px; height:190px; }
-battery-core-card .shell.size-fullscreen .battery-core { width:160px; height:365px; }
-battery-core-card .shell.size-fullscreen .core-readout { font-size:39px; }
-
-
-@media (max-width: 900px) {
-  battery-core-card .shell { min-height:0; }
-  battery-core-card .main-grid { grid-template-columns:1fr; }
-  battery-core-card .core-wrap { order:-1; height:480px; }
-  battery-core-card .side.left, battery-core-card .side.right { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-  battery-core-card .metric { padding:12px 6px; }
-}
-@media (max-width: 560px) {
-  battery-core-card .shell { padding:12px; border-radius:16px; }
-  battery-core-card .ring-outer { width:320px;height:320px; }
-  battery-core-card .ring-mid { width:275px;height:275px; }
-  battery-core-card .ticks { width:345px;height:345px; }
-  battery-core-card .orbit { width:330px; }
-  battery-core-card .core-wrap { height:400px; }
-  battery-core-card .side.left, battery-core-card .side.right { grid-template-columns:1fr; }
-  battery-core-card .flow { flex-wrap:wrap; }
-  battery-core-card .flow-arrows { display:none; }
-}
+const BATTERY_CORE_STYLE = `
+/* V0.8: visual styling is maintained in battery-core-card.css.
+   This tiny fallback only prevents an unstyled flash if the CSS resource is late. */
+battery-core-card { display:block; width:100%; }
+battery-core-card .battery-card { background:transparent!important; box-shadow:none!important; border:0!important; }
 `;
-
 if (!document.head.querySelector('style[data-battery-core-card]')) {
   const style = document.createElement('style');
   style.dataset.batteryCoreCard = 'true';
   style.textContent = BATTERY_CORE_STYLE;
   document.head.appendChild(style);
 }
+
+
+function batteryCoreEnsureCss() {
+  if (document.querySelector('link[data-battery-core-css="v0.8"]')) return;
+  try {
+    const scripts = [...document.querySelectorAll('script[src]')];
+    const own = scripts.find(s => /battery-core-card(?:-v[\d.]+)?\.js(?:\?|$)/.test(s.src));
+    const href = own
+      ? new URL("battery-core-card.css", own.src).href
+      : "/local/community/battery-core/battery-core-card.css";
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = href;
+    link.dataset.batteryCoreCss = "v0.8";
+    document.head.appendChild(link);
+  } catch (e) {
+    console.warn("Battery Core Card: impossible de charger battery-core-card.css", e);
+  }
+}
+batteryCoreEnsureCss();
 
 class BatteryCoreCard extends HTMLElement {
   static getStubConfig() {
@@ -1213,60 +707,161 @@ class BatteryCoreCardEditor extends HTMLElement {
 
   set hass(hass) {
     this._hass = hass;
+    // Home Assistant can inject hass after setConfig().
+    // Refresh only the native entity pickers instead of rebuilding the editor.
+    this.querySelectorAll("ha-entity-picker").forEach((picker) => {
+      picker.hass = hass;
+    });
+  }
+
+  _entityRow(label, id) {
+    return `
+      <div class="bc-editor-field">
+        <div class="bc-editor-label">${label}</div>
+        <ha-entity-picker
+          id="${id}"
+          allow-custom-entity
+          style="width:100%;">
+        </ha-entity-picker>
+      </div>
+    `;
   }
 
   _render() {
     if (!this._config) return;
+
     this.innerHTML = `
-      <div style="display: grid; gap: 12px; padding: 10px;">
-        <label>Titre : <input type="text" id="title" value="${this._config.title || ''}" style="width:100%"></label>
-        <label>Modèle : <input type="text" id="model" value="${this._config.model || ''}" style="width:100%"></label>
-        <label>Capacité (kWh) : <input type="number" id="capacity" value="${this._config.capacity || 29}" style="width:100%"></label>
-        <label>Taille de la carte :
-          <select id="size" style="width:100%; min-height:36px;">
+      <style>
+        .bc-editor {
+          display:grid;
+          gap:16px;
+          padding:10px 2px;
+        }
+        .bc-editor-field {
+          display:grid;
+          gap:6px;
+        }
+        .bc-editor-label {
+          font-size:16px;
+          font-weight:500;
+          color:var(--primary-text-color);
+        }
+        .bc-editor input,
+        .bc-editor select {
+          width:100%;
+          min-height:40px;
+          box-sizing:border-box;
+        }
+        .bc-editor-section {
+          margin-top:4px;
+          padding-top:14px;
+          border-top:1px solid var(--divider-color);
+        }
+        .bc-editor-section-title {
+          margin-bottom:12px;
+          font-size:13px;
+          font-weight:700;
+          letter-spacing:.12em;
+          text-transform:uppercase;
+          color:var(--secondary-text-color);
+        }
+      </style>
+
+      <div class="bc-editor">
+        <label class="bc-editor-field">
+          <span class="bc-editor-label">Titre</span>
+          <input type="text" id="title" value="${this._config.title || ''}">
+        </label>
+
+        <label class="bc-editor-field">
+          <span class="bc-editor-label">Modèle</span>
+          <input type="text" id="model" value="${this._config.model || ''}">
+        </label>
+
+        <label class="bc-editor-field">
+          <span class="bc-editor-label">Capacité (kWh)</span>
+          <input type="number" id="capacity" value="${this._config.capacity || 29}">
+        </label>
+
+        <label class="bc-editor-field">
+          <span class="bc-editor-label">Taille de la carte</span>
+          <select id="size">
             <option value="compact" ${(this._config.size || "compact") === "compact" ? "selected" : ""}>Compacte</option>
             <option value="normal" ${this._config.size === "normal" ? "selected" : ""}>Normale</option>
             <option value="large" ${this._config.size === "large" ? "selected" : ""}>Grande</option>
             <option value="fullscreen" ${this._config.size === "fullscreen" ? "selected" : ""}>Plein écran</option>
           </select>
         </label>
-        <label>
-          Taille graphique : <strong id="scaleValue">${this._config.scale_percent || 75}%</strong>
+
+        <label class="bc-editor-field">
+          <span class="bc-editor-label">
+            Taille graphique : <strong id="scaleValue">${this._config.scale_percent || 75}%</strong>
+          </span>
           <input type="range" id="scale_percent" min="50" max="100" step="5"
                  value="${this._config.scale_percent || 75}"
-                 style="width:100%; accent-color:#00d9ff;">
-          <small style="display:block;opacity:.7;margin-top:4px;">Réduit le noyau et les éléments sans rétrécir la largeur de la carte.</small>
+                 style="accent-color:#00d9ff;">
+          <small style="opacity:.7;">Réduit le noyau et les éléments sans rétrécir la largeur de la carte.</small>
         </label>
-        <label>Entité SoC (Batterie %) : <input type="text" id="battery_soc" value="${this._config.battery_soc || ''}" style="width:100%"></label>
-        <label>Entité Puissance : <input type="text" id="battery_power" value="${this._config.battery_power || ''}" style="width:100%"></label>
-        <label>Entité Temps restant : <input type="text" id="time_remaining" value="${this._config.time_remaining || ''}" style="width:100%"></label>
+
+        <div class="bc-editor-section">
+          <div class="bc-editor-section-title">Entités Home Assistant</div>
+
+          ${this._entityRow("Batterie : niveau de charge (%)", "battery_soc")}
+          <div style="height:14px"></div>
+
+          ${this._entityRow("Batterie : puissance", "battery_power")}
+          <div style="height:14px"></div>
+
+          ${this._entityRow("Batterie : temps restant", "time_remaining")}
+        </div>
       </div>
     `;
 
-    this.querySelectorAll('input').forEach(input => {
-      input.addEventListener('input', (e) => this._valueChanged(e));
+    // Configure Home Assistant's native entity pickers.
+    const pickerIds = ["battery_soc", "battery_power", "time_remaining"];
+    pickerIds.forEach((id) => {
+      const picker = this.querySelector(`#${id}`);
+      if (!picker) return;
+      picker.hass = this._hass;
+      picker.value = this._config[id] || "";
+      picker.includeDomains = ["sensor"];
+      picker.addEventListener("value-changed", (ev) => {
+        const value = ev.detail?.value ?? "";
+        this._setConfigValue(id, value);
+      });
     });
-    this.querySelectorAll('select').forEach(select => {
+
+    this.querySelectorAll('input').forEach((input) => {
+      input.addEventListener('input', (e) => {
+        if (e.target.id === "scale_percent") {
+          const label = this.querySelector("#scaleValue");
+          if (label) label.textContent = `${e.target.value}%`;
+        }
+        this._valueChanged(e);
+      });
+    });
+
+    this.querySelectorAll('select').forEach((select) => {
       select.addEventListener('change', (e) => this._valueChanged(e));
     });
   }
 
-  _valueChanged(e) {
-    if (!this._config || !this._hass) return;
-    const target = e.target;
-    const value = target.type === 'number' ? Number(target.value) : target.value;
-    
-    this._config = {
-      ...this._config,
-      [target.id]: value
-    };
+  _setConfigValue(key, value) {
+    if (!this._config) return;
+    this._config = { ...this._config, [key]: value };
 
-    const event = new CustomEvent("config-changed", {
+    this.dispatchEvent(new CustomEvent("config-changed", {
       detail: { config: this._config },
       bubbles: true,
       composed: true,
-    });
-    this.dispatchEvent(event);
+    }));
+  }
+
+  _valueChanged(e) {
+    if (!this._config) return;
+    const target = e.target;
+    const value = target.type === 'number' ? Number(target.value) : target.value;
+    this._setConfigValue(target.id, value);
   }
 }
 
@@ -1277,6 +872,6 @@ window.customCards = window.customCards || [];
 window.customCards.push({
   type: "battery-core-card",
   name: "Battery Core Card",
-  description: "Standalone futuristic animated battery visualization with visual editor.",
+  description: "Futuristic animated battery visualization with native Home Assistant entity selectors.",
   preview: true
 });
