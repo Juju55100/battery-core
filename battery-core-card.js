@@ -1,5 +1,5 @@
 /* Battery Core Card — standalone Home Assistant Lovelace card
- * With built-in Visual Editor support and automatic W/kW power conversion.
+ * Full animated futuristic battery core with visual editor and auto W/kW conversion.
  */
 
 const BATTERY_CORE_STYLE = `battery-core-card {
@@ -353,7 +353,6 @@ class BatteryCoreCard extends HTMLElement {
     return Number.isFinite(n) ? n : fallback;
   }
 
-  // Conversion automatique Watts -> kW si la valeur dépasse 50
   _powerNum(entity, fallback = 0) {
     const n = parseFloat(this._state(entity, ""));
     if (!Number.isFinite(n)) return fallback;
