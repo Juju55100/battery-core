@@ -1,9 +1,10 @@
-/* Battery Core Card v0.3 — standalone Home Assistant Lovelace card
+/* Battery Core Card v0.4 — standalone Home Assistant Lovelace card
  * Futuristic battery core with visual editor, adjustable scale and SOC ring.
  */
 
 const BATTERY_CORE_STYLE = `battery-core-card {
   display: block;
+  container-type: inline-size;
   width: 100%;
   --bc-bg: #020b18;
   --bc-blue: #00d9ff;
@@ -301,6 +302,142 @@ battery-core-card.discharging .ring-outer {
   );
 }
 
+
+/* =========================================================
+   V0.4 RESPONSIVE SCALE
+   The slider changes the component geometry, NOT browser zoom.
+   This keeps the core centered and prevents right-side clipping.
+   ========================================================= */
+battery-core-card .scale-stage,
+battery-core-card .scale-target {
+  width:100% !important;
+  overflow:visible !important;
+  zoom:1 !important;
+}
+
+battery-core-card .shell {
+  --bc-scale: 0.75;
+  --bc-core: calc(118px * var(--bc-scale));
+  --bc-core-h: calc(270px * var(--bc-scale));
+  --bc-ring: calc(350px * var(--bc-scale));
+  --bc-ring-mid: calc(295px * var(--bc-scale));
+  --bc-ticks: calc(372px * var(--bc-scale));
+  --bc-orbit-w: calc(360px * var(--bc-scale));
+  --bc-orbit-h: calc(140px * var(--bc-scale));
+}
+
+/* Keep the three columns inside the actual card width. */
+battery-core-card .main-grid {
+  grid-template-columns:
+    minmax(125px, 0.9fr)
+    minmax(210px, 1.25fr)
+    minmax(125px, 0.9fr) !important;
+  gap: clamp(4px, 1vw, 12px) !important;
+  min-width:0;
+}
+battery-core-card .main-grid > * { min-width:0; }
+battery-core-card .side { min-width:0; }
+battery-core-card .metric { min-width:0; overflow:hidden; }
+battery-core-card .power-value,
+battery-core-card .time-value,
+battery-core-card .big-value { white-space:nowrap; }
+
+battery-core-card .core-wrap {
+  height: calc(420px * var(--bc-scale)) !important;
+  min-height:250px;
+  width:100%;
+  min-width:0;
+  overflow:visible;
+}
+battery-core-card .ring-outer {
+  width:var(--bc-ring) !important;
+  height:var(--bc-ring) !important;
+}
+battery-core-card .ring-mid {
+  width:var(--bc-ring-mid) !important;
+  height:var(--bc-ring-mid) !important;
+}
+battery-core-card .ticks {
+  width:var(--bc-ticks) !important;
+  height:var(--bc-ticks) !important;
+}
+battery-core-card .orbit {
+  width:var(--bc-orbit-w) !important;
+  height:var(--bc-orbit-h) !important;
+}
+battery-core-card .battery-core {
+  width:var(--bc-core) !important;
+  height:var(--bc-core-h) !important;
+}
+battery-core-card .core-readout {
+  font-size:calc(29px * var(--bc-scale)) !important;
+}
+battery-core-card .energy-streams {
+  transform:scale(var(--bc-scale));
+  transform-origin:center bottom;
+}
+
+/* Scale typography gently: unlike zoom, it remains readable. */
+battery-core-card .shell .metric-title {
+  font-size:clamp(9px, calc(13px * var(--bc-scale)), 13px);
+}
+battery-core-card .shell .soc-line strong {
+  font-size:clamp(24px, calc(38px * var(--bc-scale)), 38px);
+}
+battery-core-card .shell .big-value {
+  font-size:clamp(17px, calc(24px * var(--bc-scale)), 24px);
+}
+battery-core-card .shell .power-value {
+  font-size:clamp(19px, calc(30px * var(--bc-scale)), 30px);
+}
+battery-core-card .shell .time-value {
+  font-size:clamp(20px, calc(34px * var(--bc-scale)), 34px);
+}
+
+/* Compact preset now controls layout density only; slider controls geometry. */
+battery-core-card .shell.size-compact {
+  min-height:0 !important;
+  padding:14px !important;
+}
+battery-core-card .shell.size-compact .header {
+  transform:none !important;
+}
+battery-core-card .shell.size-compact .main-grid {
+  min-height:0 !important;
+}
+battery-core-card .shell.size-compact .core-wrap {
+  height:calc(420px * var(--bc-scale)) !important;
+}
+battery-core-card .shell.size-compact .ring-outer {
+  width:var(--bc-ring) !important; height:var(--bc-ring) !important;
+}
+battery-core-card .shell.size-compact .ring-mid {
+  width:var(--bc-ring-mid) !important; height:var(--bc-ring-mid) !important;
+}
+battery-core-card .shell.size-compact .ticks {
+  width:var(--bc-ticks) !important; height:var(--bc-ticks) !important;
+}
+battery-core-card .shell.size-compact .orbit {
+  width:var(--bc-orbit-w) !important; height:var(--bc-orbit-h) !important;
+}
+battery-core-card .shell.size-compact .battery-core {
+  width:var(--bc-core) !important; height:var(--bc-core-h) !important;
+}
+battery-core-card .shell.size-compact .core-readout {
+  font-size:calc(29px * var(--bc-scale)) !important;
+}
+
+/* Narrow HA columns: stack info around a centered core rather than crop it. */
+@container (max-width: 650px) {
+  battery-core-card .main-grid {
+    grid-template-columns:1fr 1fr !important;
+  }
+  battery-core-card .core-wrap {
+    grid-column:1 / -1;
+    grid-row:1;
+  }
+}
+
 /* =========================================================
    CARD SIZE PRESETS
    compact / normal / large / fullscreen
@@ -485,7 +622,7 @@ class BatteryCoreCard extends HTMLElement {
       </style>
 
       <div class="scale-stage">
-        <div class="scale-target" style="--bc-user-scale:${Math.max(50, Math.min(100, Number(this.config.scale_percent) || 75)) / 100}">
+        <div class="scale-target">
       <ha-card class="battery-card">
         <div class="shell size-${this.config.size || "compact"}">
           <div class="top-corner"></div>
@@ -662,7 +799,11 @@ class BatteryCoreCard extends HTMLElement {
     set("house", house === "—" ? "—" : `${house} kW`);
 
     const shell = this.querySelector(".shell");
-    if (shell) shell.style.setProperty("--bc-soc-angle", `${soc * 3.6}deg`);
+    if (shell) {
+      shell.style.setProperty("--bc-soc-angle", `${soc * 3.6}deg`);
+      const scalePct = Math.max(50, Math.min(100, Number(this.config.scale_percent) || 75));
+      shell.style.setProperty("--bc-scale", String(scalePct / 100));
+    }
 
     const liquid = this.querySelector("#liquid");
     if (liquid) liquid.style.height = `${soc}%`;
@@ -705,10 +846,11 @@ class BatteryCoreCardEditor extends HTMLElement {
           </select>
         </label>
         <label>
-          Échelle : <strong id="scaleValue">${this._config.scale_percent || 75}%</strong>
+          Taille graphique : <strong id="scaleValue">${this._config.scale_percent || 75}%</strong>
           <input type="range" id="scale_percent" min="50" max="100" step="5"
                  value="${this._config.scale_percent || 75}"
                  style="width:100%; accent-color:#00d9ff;">
+          <small style="display:block;opacity:.7;margin-top:4px;">Réduit le noyau et les éléments sans rétrécir la largeur de la carte.</small>
         </label>
         <label>Entité SoC (Batterie %) : <input type="text" id="battery_soc" value="${this._config.battery_soc || ''}" style="width:100%"></label>
         <label>Entité Puissance : <input type="text" id="battery_power" value="${this._config.battery_power || ''}" style="width:100%"></label>
