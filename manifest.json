@@ -1,0 +1,6 @@
+{
+  "name": "Battery Core Card",
+  "version": "0.1.0",
+  "description": "Standalone futuristic animated battery visualization for Home Assistant.",
+  "license": "MIT"
+}
