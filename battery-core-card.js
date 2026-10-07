@@ -1,4 +1,4 @@
-/* Battery Core Card v0.9.3 — standalone Home Assistant Lovelace card
+/* Battery Core Card v0.9.4 — standalone Home Assistant Lovelace card
  * Futuristic battery core with visual editor, adjustable scale and SOC ring.
  */
 
@@ -1683,27 +1683,66 @@ battery-core-card .side .big-value {
   white-space:normal!important; overflow-wrap:anywhere;
   overflow:visible!important; text-overflow:clip!important;
 }
-/* Responsive to card width, independent of the dashboard window. */
-@container (min-width:591px) {
-  battery-core-card .core-wrap { grid-column:2!important; grid-row:1!important; }
-  battery-core-card .side.left { grid-column:1!important; grid-row:1!important; }
-  battery-core-card .side.right { grid-column:3!important; grid-row:1!important; }
-}
-@container (max-width:590px) {
-  battery-core-card .shell[class*="size-"] .main-grid { grid-template-columns:1fr!important; }
-  battery-core-card .core-wrap { grid-column:1!important; grid-row:1!important; }
-  battery-core-card .side.left { grid-column:1!important; grid-row:2!important; padding:10px 0!important; }
-  battery-core-card .side.right { grid-column:1!important; grid-row:3!important; padding:10px 0!important; }
-  battery-core-card .flow { flex-wrap:wrap; }
-  battery-core-card .flow-node { flex:1 1 120px!important; }
-  battery-core-card .flow-arrows { display:none; }
-}
 @media (prefers-reduced-motion:reduce) {
   battery-core-card *, battery-core-card *::before, battery-core-card *::after {
     animation:none!important; transition:none!important;
   }
   battery-core-card .energy-comets { display:none; }
 }
+/* V0.9.4: preserve SOC | reactor | power at every card width.
+   These final selectors supersede historical media/container stacking rules. */
+battery-core-card .shell[class*="size-"] .main-grid {
+  grid-template-columns:minmax(0,30fr) minmax(0,40fr) minmax(0,30fr)!important;
+  gap:0!important;
+}
+battery-core-card .shell[class*="size-"] .side.left {
+  grid-column:1!important; grid-row:1!important;
+  display:block!important; padding:0 8px 0 0!important;
+}
+battery-core-card .shell[class*="size-"] .core-wrap {
+  grid-column:2!important; grid-row:1!important; order:0!important;
+}
+battery-core-card .shell[class*="size-"] .side.right {
+  grid-column:3!important; grid-row:1!important;
+  display:block!important; padding:0 0 0 8px!important;
+}
+@container (max-width:590px) {
+  battery-core-card .shell[class*="size-"] .side.left { padding-right:3px!important; }
+  battery-core-card .shell[class*="size-"] .side.right { padding-left:3px!important; }
+  battery-core-card .metric { padding:12px 2px!important; }
+  battery-core-card .metric-title {
+    font-size:clamp(9px,2.5cqw,13px)!important;
+    letter-spacing:.3px; overflow-wrap:anywhere;
+  }
+  battery-core-card .soc-line { gap:4px; flex-wrap:wrap; }
+  battery-core-card .soc-line strong { font-size:clamp(20px,5.5cqw,32px)!important; }
+  battery-core-card .mini-battery { width:22px; height:22px; flex-shrink:0; }
+  battery-core-card .side .big-value,
+  battery-core-card .side .power-value,
+  battery-core-card .side .time-value { font-size:clamp(12px,3.4cqw,22px)!important; }
+  battery-core-card .big-value small,
+  battery-core-card .subvalue,
+  battery-core-card .state-label { font-size:clamp(9px,2.4cqw,12px)!important; }
+  battery-core-card .mini-grid label,
+  battery-core-card .mini-grid b { font-size:clamp(10px,2.6cqw,14px)!important; }
+  battery-core-card .side.right .mini-grid > div {
+    grid-template-columns:12px minmax(0,1fr)!important; column-gap:3px!important;
+  }
+  battery-core-card .mini-grid span { font-size:15px!important; }
+  battery-core-card .metric-symbol { margin-right:3px; }
+  battery-core-card .battery-core.lithium-cylinder {
+    width:min(calc(230px * var(--bc-scale,.75)),82%)!important;
+  }
+  battery-core-card .lithium-cylinder .glass { left:10px!important; right:10px!important; }
+  battery-core-card .lithium-cylinder .core-readout { font-size:clamp(16px,4.4cqw,28px)!important; }
+  battery-core-card .flow { gap:4px; padding:12px 5px; flex-wrap:nowrap; }
+  battery-core-card .flow-node { gap:3px; flex:1 1 0!important; }
+  battery-core-card .flow-node > span { font-size:18px; }
+  battery-core-card .flow-node b { font-size:clamp(10px,2.8cqw,16px); overflow-wrap:anywhere; }
+  battery-core-card .flow-node small { font-size:8px; letter-spacing:0; }
+  battery-core-card .flow-arrows { display:none; }
+}
+
 `;
 if (!document.head.querySelector('style[data-battery-core-card]')) {
   const style = document.createElement('style');
@@ -2243,3 +2282,4 @@ window.customCards.push({
   description: "Futuristic animated battery visualization with native Home Assistant entity selectors.",
   preview: true
 });
+
