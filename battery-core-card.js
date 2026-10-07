@@ -265,6 +265,83 @@ battery-core-card.empty .liquid { box-shadow:none; }
 @keyframes bcStream { from{transform:translateY(120px);opacity:0} 20%{opacity:1} 100%{transform:translateY(-30px);opacity:0} }
 @keyframes bcArrow { 50% { transform:translateX(6px); } }
 
+
+/* =========================================================
+   CARD SIZE PRESETS
+   compact / normal / large / fullscreen
+   ========================================================= */
+
+battery-core-card .shell.size-compact {
+  min-height: 540px;
+  padding: 14px;
+}
+battery-core-card .shell.size-compact .header { transform:scale(.86); transform-origin:top left; }
+battery-core-card .shell.size-compact .main-grid {
+  grid-template-columns: 145px minmax(230px, 1fr) 145px;
+  gap: 8px;
+  min-height: 350px;
+}
+battery-core-card .shell.size-compact .core-wrap { height:350px; }
+battery-core-card .shell.size-compact .ring-outer { width:290px; height:290px; border-width:7px; }
+battery-core-card .shell.size-compact .ring-mid { width:245px; height:245px; }
+battery-core-card .shell.size-compact .ticks { width:310px; height:310px; }
+battery-core-card .shell.size-compact .orbit { width:300px; height:115px; }
+battery-core-card .shell.size-compact .battery-core { width:96px; height:220px; }
+battery-core-card .shell.size-compact .cap,
+battery-core-card .shell.size-compact .base { height:27px; }
+battery-core-card .shell.size-compact .glass { left:11px; right:11px; top:19px; bottom:19px; }
+battery-core-card .shell.size-compact .core-readout { font-size:25px; }
+battery-core-card .shell.size-compact .energy-streams { width:180px; height:95px; }
+battery-core-card .shell.size-compact .metric { padding:10px 5px; }
+battery-core-card .shell.size-compact .metric-title { font-size:10px; margin-bottom:6px; }
+battery-core-card .shell.size-compact .soc-line strong { font-size:29px; }
+battery-core-card .shell.size-compact .big-value { font-size:19px; }
+battery-core-card .shell.size-compact .power-value { font-size:22px; }
+battery-core-card .shell.size-compact .time-value { font-size:24px; }
+battery-core-card .shell.size-compact .flow { padding:11px 12px; }
+battery-core-card .shell.size-compact .flow-node { min-width:95px; }
+battery-core-card .shell.size-compact .flow-node > span { font-size:22px; }
+battery-core-card .shell.size-compact .flow-node b { font-size:14px; }
+battery-core-card .shell.size-compact .footer { padding-top:10px; font-size:10px; }
+
+battery-core-card .shell.size-normal {
+  min-height: 650px;
+  padding: 18px;
+}
+battery-core-card .shell.size-normal .main-grid {
+  grid-template-columns: minmax(165px,1fr) minmax(300px,1.55fr) minmax(165px,1fr);
+  gap: 12px;
+  min-height: 430px;
+}
+battery-core-card .shell.size-normal .core-wrap { height:420px; }
+battery-core-card .shell.size-normal .ring-outer { width:350px; height:350px; border-width:8px; }
+battery-core-card .shell.size-normal .ring-mid { width:295px; height:295px; }
+battery-core-card .shell.size-normal .ticks { width:372px; height:372px; }
+battery-core-card .shell.size-normal .orbit { width:360px; height:140px; }
+battery-core-card .shell.size-normal .battery-core { width:118px; height:270px; }
+battery-core-card .shell.size-normal .core-readout { font-size:29px; }
+
+battery-core-card .shell.size-large {
+  min-height:760px;
+}
+
+battery-core-card .shell.size-fullscreen {
+  min-height:820px;
+  padding:28px;
+}
+battery-core-card .shell.size-fullscreen .main-grid {
+  grid-template-columns:minmax(220px,1fr) minmax(440px,1.8fr) minmax(220px,1fr);
+  min-height:560px;
+}
+battery-core-card .shell.size-fullscreen .core-wrap { height:550px; }
+battery-core-card .shell.size-fullscreen .ring-outer { width:480px; height:480px; }
+battery-core-card .shell.size-fullscreen .ring-mid { width:405px; height:405px; }
+battery-core-card .shell.size-fullscreen .ticks { width:505px; height:505px; }
+battery-core-card .shell.size-fullscreen .orbit { width:495px; height:190px; }
+battery-core-card .shell.size-fullscreen .battery-core { width:160px; height:365px; }
+battery-core-card .shell.size-fullscreen .core-readout { font-size:39px; }
+
+
 @media (max-width: 900px) {
   battery-core-card .shell { min-height:0; }
   battery-core-card .main-grid { grid-template-columns:1fr; }
@@ -301,7 +378,8 @@ class BatteryCoreCard extends HTMLElement {
       time_remaining: "sensor.temps_de_charge_restant_batterie",
       capacity: 29,
       title: "BATTERIE",
-      model: "LIFEPO4"
+      model: "LIFEPO4",
+      size: "compact"
     };
   }
 
@@ -317,6 +395,7 @@ class BatteryCoreCard extends HTMLElement {
       title: "BATTERIE",
       model: "LIFEPO4",
       capacity: 29,
+      size: "compact",
       battery_soc: config.battery_soc,
       battery_power: config.battery_power,
       time_remaining: config.time_remaining,
@@ -341,7 +420,10 @@ class BatteryCoreCard extends HTMLElement {
     this._update();
   }
 
-  getCardSize() { return this.config?.compact ? 6 : 10; }
+  getCardSize() {
+    const sizes = { compact: 6, normal: 8, large: 10, fullscreen: 12 };
+    return sizes[this.config?.size] || 8;
+  }
 
   _state(entity, fallback = "—") {
     if (!entity || !this._hass?.states?.[entity]) return fallback;
@@ -366,7 +448,7 @@ class BatteryCoreCard extends HTMLElement {
       </style>
 
       <ha-card class="battery-card">
-        <div class="shell">
+        <div class="shell size-${this.config.size || "compact"}">
           <div class="top-corner"></div>
 
           <header class="header">
@@ -570,6 +652,14 @@ class BatteryCoreCardEditor extends HTMLElement {
         <label>Titre : <input type="text" id="title" value="${this._config.title || ''}" style="width:100%"></label>
         <label>Modèle : <input type="text" id="model" value="${this._config.model || ''}" style="width:100%"></label>
         <label>Capacité (kWh) : <input type="number" id="capacity" value="${this._config.capacity || 29}" style="width:100%"></label>
+        <label>Taille de la carte :
+          <select id="size" style="width:100%; min-height:36px;">
+            <option value="compact" ${(this._config.size || "compact") === "compact" ? "selected" : ""}>Compacte</option>
+            <option value="normal" ${this._config.size === "normal" ? "selected" : ""}>Normale</option>
+            <option value="large" ${this._config.size === "large" ? "selected" : ""}>Grande</option>
+            <option value="fullscreen" ${this._config.size === "fullscreen" ? "selected" : ""}>Plein écran</option>
+          </select>
+        </label>
         <label>Entité SoC (Batterie %) : <input type="text" id="battery_soc" value="${this._config.battery_soc || ''}" style="width:100%"></label>
         <label>Entité Puissance : <input type="text" id="battery_power" value="${this._config.battery_power || ''}" style="width:100%"></label>
         <label>Entité Temps restant : <input type="text" id="time_remaining" value="${this._config.time_remaining || ''}" style="width:100%"></label>
@@ -578,6 +668,9 @@ class BatteryCoreCardEditor extends HTMLElement {
 
     this.querySelectorAll('input').forEach(input => {
       input.addEventListener('input', (e) => this._valueChanged(e));
+    });
+    this.querySelectorAll('select').forEach(select => {
+      select.addEventListener('change', (e) => this._valueChanged(e));
     });
   }
 
