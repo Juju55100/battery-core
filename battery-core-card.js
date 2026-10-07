@@ -1,5 +1,5 @@
 /* Battery Core Card — standalone Home Assistant Lovelace card
- * No dependency on button-card, power-flow-card or other custom cards.
+ * With built-in Visual Editor support.
  */
 
 const BATTERY_CORE_STYLE = `battery-core-card {
@@ -284,6 +284,7 @@ battery-core-card.empty .liquid { box-shadow:none; }
   battery-core-card .flow-arrows { display:none; }
 }
 `;
+
 if (!document.head.querySelector('style[data-battery-core-card]')) {
   const style = document.createElement('style');
   style.dataset.batteryCoreCard = 'true';
@@ -302,6 +303,10 @@ class BatteryCoreCard extends HTMLElement {
       title: "BATTERIE",
       model: "HYPO 4"
     };
+  }
+
+  static getConfigElement() {
+    return document.createElement("battery-core-card-editor");
   }
 
   setConfig(config) {
@@ -346,12 +351,6 @@ class BatteryCoreCard extends HTMLElement {
   _num(entity, fallback = 0) {
     const n = parseFloat(this._state(entity, ""));
     return Number.isFinite(n) ? n : fallback;
-  }
-
-  _esc(v) {
-    return String(v ?? "").replace(/[&<>"']/g, c => ({
-      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-    }[c]));
   }
 
   _render() {
@@ -544,12 +543,61 @@ class BatteryCoreCard extends HTMLElement {
   }
 }
 
+// Éditeur visuel pour Home Assistant
+class BatteryCoreCardEditor extends HTMLElement {
+  setConfig(config) {
+    this._config = config;
+    this._render();
+  }
+
+  set hass(hass) {
+    this._hass = hass;
+  }
+
+  _render() {
+    if (!this._config) return;
+    this.innerHTML = `
+      <div style="display: grid; gap: 12px; padding: 10px;">
+        <label>Titre : <input type="text" id="title" value="${this._config.title || ''}" style="width:100%"></label>
+        <label>Modèle : <input type="text" id="model" value="${this._config.model || ''}" style="width:100%"></label>
+        <label>Capacité (kWh) : <input type="number" id="capacity" value="${this._config.capacity || 29}" style="width:100%"></label>
+        <label>Entité SoC (Batterie %) : <input type="text" id="battery_soc" value="${this._config.battery_soc || ''}" style="width:100%"></label>
+        <label>Entité Puissance : <input type="text" id="battery_power" value="${this._config.battery_power || ''}" style="width:100%"></label>
+        <label>Entité Temps restant : <input type="text" id="time_remaining" value="${this._config.time_remaining || ''}" style="width:100%"></label>
+      </div>
+    `;
+
+    this.querySelectorAll('input').forEach(input => {
+      input.addEventListener('input', (e) => this._valueChanged(e));
+    });
+  }
+
+  _valueChanged(e) {
+    if (!this._config || !this._hass) return;
+    const target = e.target;
+    const value = target.type === 'number' ? Number(target.value) : target.value;
+    
+    this._config = {
+      ...this._config,
+      [target.id]: value
+    };
+
+    const event = new CustomEvent("config-changed", {
+      detail: { config: this._config },
+      bubbles: true,
+      composed: true,
+    });
+    this.dispatchEvent(event);
+  }
+}
+
 customElements.define("battery-core-card", BatteryCoreCard);
+customElements.define("battery-core-card-editor", BatteryCoreCardEditor);
 
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: "battery-core-card",
   name: "Battery Core Card",
-  description: "Standalone futuristic animated battery visualization.",
+  description: "Standalone futuristic animated battery visualization with visual editor.",
   preview: true
 });
