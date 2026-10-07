@@ -1,4 +1,4 @@
-/* Battery Core Card v0.9.2 — standalone Home Assistant Lovelace card
+/* Battery Core Card v0.9.3 — standalone Home Assistant Lovelace card
  * Futuristic battery core with visual editor, adjustable scale and SOC ring.
  */
 
@@ -1262,103 +1262,7 @@ battery-core-card .lithium-cylinder .core-readout{
   to{background-position:0 -72px,0 -83px,0 -58px,0 -77px,0 -69px}
 }
 
-`;
-if (!document.head.querySelector('style[data-battery-core-card]')) {
-  const style = document.createElement('style');
-  style.dataset.batteryCoreCard = 'true';
-  style.textContent = BATTERY_CORE_STYLE;
-  document.head.appendChild(style);
-}
 
-
-// V0.8.2: complete CSS is embedded in JS; external CSS remains optional/available.
-class BatteryCoreCard extends HTMLElement {
-  static getStubConfig() {
-    return {
-      type: "custom:battery-core-card",
-      battery_soc: "sensor.onduleur_soc_batterie_1",
-      battery_power: "sensor.onduleur_puissance_batterie_1",
-      time_remaining: "sensor.temps_de_charge_restant_batterie",
-      capacity: 29,
-      title: "BATTERIE",
-      model: "LIFEPO4",
-      size: "compact",
-      scale_percent: 75
-    };
-  }
-
-  static getConfigElement() {
-    return document.createElement("battery-core-card-editor");
-  }
-
-  setConfig(config) {
-    if (!config || !config.battery_soc || !config.battery_power) {
-      throw new Error("Battery Core Card: battery_soc and battery_power are required");
-    }
-    this.config = {
-      title: "BATTERIE",
-      model: "LIFEPO4",
-      capacity: 29,
-      size: "compact",
-      scale_percent: 75,
-      battery_soc: config.battery_soc,
-      battery_power: config.battery_power,
-      time_remaining: config.time_remaining,
-      voltage: config.voltage,
-      temperature: config.temperature,
-      current: config.current,
-      solar_power: config.solar_power,
-      house_power: config.house_power,
-      grid_power: config.grid_power,
-      compact: false,
-      ...config
-    };
-    this._rendered = false;
-  }
-
-  set hass(hass) {
-    this._hass = hass;
-    if (!this._rendered) {
-      this._render();
-      this._rendered = true;
-    }
-    this._update();
-  }
-
-  getCardSize() {
-    const sizes = { compact: 6, normal: 8, large: 10, fullscreen: 12 };
-    return sizes[this.config?.size] || 8;
-  }
-
-  _state(entity, fallback = "—") {
-    if (!entity || !this._hass?.states?.[entity]) return fallback;
-    return this._hass.states[entity].state;
-  }
-
-  _num(entity, fallback = 0) {
-    const n = parseFloat(this._state(entity, ""));
-    return Number.isFinite(n) ? n : fallback;
-  }
-
-  _powerNum(entity, fallback = 0) {
-    const stateObj = entity ? this._hass?.states?.[entity] : null;
-    const n = parseFloat(stateObj?.state);
-    if (!Number.isFinite(n)) return fallback;
-
-    // V0.7: use Home Assistant's declared unit instead of guessing.
-    const unit = String(stateObj?.attributes?.unit_of_measurement || "").trim().toLowerCase();
-    if (unit === "w" || unit === "watt" || unit === "watts") return n / 1000;
-    if (unit === "mw") return n / 1000000;
-    if (unit === "kw") return n;
-
-    // Fallback only for entities that do not expose a unit.
-    return Math.abs(n) > 100 ? n / 1000 : n;
-  }
-
-  _render() {
-    this.innerHTML = `
-      <style>
-        ${BATTERY_CORE_STYLE}
       
 /* =========================================================
    V0.5 HARD LAYOUT FIX
@@ -1721,7 +1625,182 @@ battery-core-card .charge-arrows { display:none !important; }
   100%{transform:translateY(190px) scale(1.05);opacity:0}
 }
 
-</style>
+/* V0.9.3: shared authoritative layout and visible SOC surface. */
+battery-core-card .shell[class*="size-"] .main-grid {
+  grid-template-columns:minmax(0,30fr) minmax(0,40fr) minmax(0,30fr)!important;
+}
+battery-core-card .side.left, battery-core-card .side.right { display:block!important; }
+battery-core-card .core-wrap { overflow:hidden!important; }
+battery-core-card .battery-core.lithium-cylinder {
+  width:min(calc(230px * var(--bc-scale,.75)),56%)!important;
+  min-height:190px;
+}
+/* Optical headroom keeps the surface below the metal cap at high SOC.
+   The numeric SOC, progress bar and HUD ring keep the exact sensor value. */
+battery-core-card .lithium-cylinder .glass {
+  --bc-surface-y:clamp(36px,calc(100% - var(--bc-soc,0) * 1%),calc(100% - 32px));
+}
+battery-core-card .lithium-cylinder .liquid { overflow:hidden!important; }
+battery-core-card .soc-surface {
+  position:absolute; left:0; width:100%; height:18px;
+  top:var(--bc-surface-y); transform:translateY(-50%);
+  z-index:9; overflow:visible; pointer-events:none;
+  transition:top .8s cubic-bezier(.2,.8,.2,1);
+  filter:drop-shadow(0 0 3px #fff) drop-shadow(0 0 7px #00eaff);
+}
+battery-core-card .soc-surface path {
+  fill:none; stroke:#eaffff; stroke-width:2.6;
+  vector-effect:non-scaling-stroke;
+  animation:bc093Surface 2.5s ease-in-out infinite;
+}
+battery-core-card .soc-surface path + path {
+  stroke:#26edff; stroke-width:2; opacity:.8;
+  animation-direction:reverse; animation-duration:3.1s;
+}
+@keyframes bc093Surface { 50% { transform:translateY(3px); } }
+battery-core-card .energy-manifold { filter:drop-shadow(0 0 6px #00dfff)!important; }
+battery-core-card .energy-manifold .energy-veins path {
+  stroke:#32eaff!important; stroke-width:4.8!important;
+  stroke-dasharray:14 7!important;
+}
+battery-core-card .energy-manifold .energy-comets circle { stroke-width:2.5!important; }
+battery-core-card:not(.charging):not(.discharging) .energy-manifold { opacity:.18!important; }
+/* Each value gets its own row, so it never competes with the label. */
+battery-core-card .side.right .mini-grid > div {
+  grid-template-columns:22px minmax(0,1fr)!important; gap:2px 7px!important;
+}
+battery-core-card .mini-grid > div > span { grid-column:1; grid-row:1 / 3; }
+battery-core-card .mini-grid label { grid-column:2; white-space:normal!important; }
+battery-core-card .mini-grid b {
+  grid-column:2; min-width:0!important; width:100%; max-width:100%!important;
+  white-space:normal!important; overflow-wrap:anywhere;
+  overflow:visible!important; text-overflow:clip!important; text-align:left!important;
+  font-size:14px!important; line-height:1.35;
+}
+battery-core-card .side.right { overflow:visible!important; }
+battery-core-card .side .time-value, battery-core-card .side .power-value,
+battery-core-card .side .big-value {
+  white-space:normal!important; overflow-wrap:anywhere;
+  overflow:visible!important; text-overflow:clip!important;
+}
+/* Responsive to card width, independent of the dashboard window. */
+@container (min-width:591px) {
+  battery-core-card .core-wrap { grid-column:2!important; grid-row:1!important; }
+  battery-core-card .side.left { grid-column:1!important; grid-row:1!important; }
+  battery-core-card .side.right { grid-column:3!important; grid-row:1!important; }
+}
+@container (max-width:590px) {
+  battery-core-card .shell[class*="size-"] .main-grid { grid-template-columns:1fr!important; }
+  battery-core-card .core-wrap { grid-column:1!important; grid-row:1!important; }
+  battery-core-card .side.left { grid-column:1!important; grid-row:2!important; padding:10px 0!important; }
+  battery-core-card .side.right { grid-column:1!important; grid-row:3!important; padding:10px 0!important; }
+  battery-core-card .flow { flex-wrap:wrap; }
+  battery-core-card .flow-node { flex:1 1 120px!important; }
+  battery-core-card .flow-arrows { display:none; }
+}
+@media (prefers-reduced-motion:reduce) {
+  battery-core-card *, battery-core-card *::before, battery-core-card *::after {
+    animation:none!important; transition:none!important;
+  }
+  battery-core-card .energy-comets { display:none; }
+}
+`;
+if (!document.head.querySelector('style[data-battery-core-card]')) {
+  const style = document.createElement('style');
+  style.dataset.batteryCoreCard = 'true';
+  style.textContent = BATTERY_CORE_STYLE;
+  document.head.appendChild(style);
+}
+
+
+// V0.8.2: complete CSS is embedded in JS; external CSS remains optional/available.
+class BatteryCoreCard extends HTMLElement {
+  static getStubConfig() {
+    return {
+      type: "custom:battery-core-card",
+      battery_soc: "sensor.onduleur_soc_batterie_1",
+      battery_power: "sensor.onduleur_puissance_batterie_1",
+      time_remaining: "sensor.temps_de_charge_restant_batterie",
+      capacity: 29,
+      title: "BATTERIE",
+      model: "LIFEPO4",
+      size: "compact",
+      scale_percent: 75
+    };
+  }
+
+  static getConfigElement() {
+    return document.createElement("battery-core-card-editor");
+  }
+
+  setConfig(config) {
+    if (!config || !config.battery_soc || !config.battery_power) {
+      throw new Error("Battery Core Card: battery_soc and battery_power are required");
+    }
+    this.config = {
+      title: "BATTERIE",
+      model: "LIFEPO4",
+      capacity: 29,
+      size: "compact",
+      scale_percent: 75,
+      battery_soc: config.battery_soc,
+      battery_power: config.battery_power,
+      time_remaining: config.time_remaining,
+      voltage: config.voltage,
+      temperature: config.temperature,
+      current: config.current,
+      solar_power: config.solar_power,
+      house_power: config.house_power,
+      grid_power: config.grid_power,
+      compact: false,
+      ...config
+    };
+    this._rendered = false;
+  }
+
+  set hass(hass) {
+    this._hass = hass;
+    if (!this._rendered) {
+      this._render();
+      this._rendered = true;
+    }
+    this._update();
+  }
+
+  getCardSize() {
+    const sizes = { compact: 6, normal: 8, large: 10, fullscreen: 12 };
+    return sizes[this.config?.size] || 8;
+  }
+
+  _state(entity, fallback = "—") {
+    if (!entity || !this._hass?.states?.[entity]) return fallback;
+    return this._hass.states[entity].state;
+  }
+
+  _num(entity, fallback = 0) {
+    const n = parseFloat(this._state(entity, ""));
+    return Number.isFinite(n) ? n : fallback;
+  }
+
+  _powerNum(entity, fallback = 0) {
+    const stateObj = entity ? this._hass?.states?.[entity] : null;
+    const n = parseFloat(stateObj?.state);
+    if (!Number.isFinite(n)) return fallback;
+
+    // V0.7: use Home Assistant's declared unit instead of guessing.
+    const unit = String(stateObj?.attributes?.unit_of_measurement || "").trim().toLowerCase();
+    if (unit === "w" || unit === "watt" || unit === "watts") return n / 1000;
+    if (unit === "mw") return n / 1000000;
+    if (unit === "kw") return n;
+
+    // Fallback only for entities that do not expose a unit.
+    return Math.abs(n) > 100 ? n / 1000 : n;
+  }
+
+  _render() {
+    this.innerHTML = `
+      <style>
+        ${BATTERY_CORE_STYLE}</style>
 
       <div class="scale-stage">
         <div class="scale-target">
@@ -1778,10 +1857,12 @@ battery-core-card .charge-arrows { display:none !important; }
                 <div class="cap cap-top"></div>
                 <div class="glass">
                   <div class="liquid" id="liquid">
-                    <div class="wave wave1"></div>
-                    <div class="wave wave2"></div>
                     <div class="particles"></div>
                   </div>
+                  <svg class="soc-surface" viewBox="0 0 120 18" preserveAspectRatio="none" aria-hidden="true">
+                    <path d="M-5 9 Q10 2 25 9 T55 9 T85 9 T115 9 T145 9"/>
+                    <path d="M-5 11 Q10 17 25 11 T55 11 T85 11 T115 11 T145 11"/>
+                  </svg>
                   <div class="glass-shine"></div>
                   <div class="energy-particles" aria-hidden="true">
                     <i></i><i></i><i></i><i></i><i></i><i></i>
@@ -1795,19 +1876,8 @@ battery-core-card .charge-arrows { display:none !important; }
               </div>
 
               <svg class="energy-manifold" viewBox="0 0 420 210" preserveAspectRatio="none" aria-hidden="true">
-                <defs>
-                  <filter id="bcGlow092" x="-80%" y="-80%" width="260%" height="260%">
-                    <feGaussianBlur stdDeviation="4" result="blur"/>
-                    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-                  </filter>
-                  <linearGradient id="bcBeam092" x1="0" y1="1" x2="0" y2="0">
-                    <stop offset="0" stop-color="#0078ff" stop-opacity="0"/>
-                    <stop offset=".28" stop-color="#00bfff" stop-opacity=".55"/>
-                    <stop offset=".72" stop-color="#39f8ff" stop-opacity=".95"/>
-                    <stop offset="1" stop-color="#eaffff"/>
-                  </linearGradient>
-                </defs>
-                <g class="energy-veins" filter="url(#bcGlow092)">
+                
+                <g class="energy-veins">
                   <path d="M22 204 C72 190 105 150 174 87"/>
                   <path d="M76 207 C116 178 139 139 185 83"/>
                   <path d="M132 210 C157 168 174 124 197 78"/>
@@ -1816,7 +1886,7 @@ battery-core-card .charge-arrows { display:none !important; }
                   <path d="M344 207 C304 178 281 139 235 83"/>
                   <path d="M398 204 C348 190 315 150 246 87"/>
                 </g>
-                <g class="energy-comets" filter="url(#bcGlow092)">
+                <g class="energy-comets">
                   <circle r="4"><animateMotion dur="1.8s" repeatCount="indefinite" path="M22 204 C72 190 105 150 174 87"/></circle>
                   <circle r="3"><animateMotion dur="1.45s" begin="-.6s" repeatCount="indefinite" path="M76 207 C116 178 139 139 185 83"/></circle>
                   <circle r="3.5"><animateMotion dur="1.65s" begin="-1s" repeatCount="indefinite" path="M132 210 C157 168 174 124 197 78"/></circle>
@@ -1824,6 +1894,14 @@ battery-core-card .charge-arrows { display:none !important; }
                   <circle r="3.5"><animateMotion dur="1.6s" begin="-.8s" repeatCount="indefinite" path="M288 210 C263 168 246 124 223 78"/></circle>
                   <circle r="3"><animateMotion dur="1.5s" begin="-1.2s" repeatCount="indefinite" path="M344 207 C304 178 281 139 235 83"/></circle>
                   <circle r="4"><animateMotion dur="1.85s" begin="-.45s" repeatCount="indefinite" path="M398 204 C348 190 315 150 246 87"/></circle>
+                
+                  <circle r="4"><animateMotion begin="-.95s" dur="1.8s" repeatCount="indefinite" path="M22 204 C72 190 105 150 174 87"/></circle>
+                  <circle r="3"><animateMotion begin="-.95s" dur="1.45s"  repeatCount="indefinite" path="M76 207 C116 178 139 139 185 83"/></circle>
+                  <circle r="3.5"><animateMotion begin="-.95s" dur="1.65s"  repeatCount="indefinite" path="M132 210 C157 168 174 124 197 78"/></circle>
+                  <circle r="4"><animateMotion begin="-.95s" dur="1.25s"  repeatCount="indefinite" path="M210 210 C210 163 210 116 210 72"/></circle>
+                  <circle r="3.5"><animateMotion begin="-.95s" dur="1.6s"  repeatCount="indefinite" path="M288 210 C263 168 246 124 223 78"/></circle>
+                  <circle r="3"><animateMotion begin="-.95s" dur="1.5s"  repeatCount="indefinite" path="M344 207 C304 178 281 139 235 83"/></circle>
+                  <circle r="4"><animateMotion begin="-.95s" dur="1.85s"  repeatCount="indefinite" path="M398 204 C348 190 315 150 246 87"/></circle>
                 </g>
               </svg>
               <div class="energy-streams">
@@ -1942,13 +2020,23 @@ battery-core-card .charge-arrows { display:none !important; }
     if (shell) {
       shell.style.setProperty("--bc-soc-angle", `${soc * 3.6}deg`);
       shell.style.setProperty("--bc-soc", String(soc));
-      shell.style.setProperty("--bc-flow-opacity", String(Math.max(.35, Math.min(1, .35 + powerAbs / 3))));
+      shell.style.setProperty("--bc-flow-opacity", String(Math.max(.8, Math.min(1, .8 + powerAbs / 5))));
       const scalePct = Math.max(50, Math.min(100, Number(this.config.scale_percent) || 75));
       shell.style.setProperty("--bc-scale", String(scalePct / 100));
     }
 
     const liquid = this.querySelector("#liquid");
-    if (liquid) liquid.style.height = `${soc}%`;
+    if (liquid) liquid.style.height = soc <= 0 ? "0%" : "calc(100% - var(--bc-surface-y))";
+    const surface = this.querySelector(".soc-surface");
+    if (surface) surface.style.display = soc <= 0 ? "none" : "block";
+    const direction = discharging ? "1;0" : "0;1";
+    this.querySelectorAll(".energy-comets animateMotion").forEach(motion => {
+      if (motion.getAttribute("keyPoints") !== direction) {
+        motion.setAttribute("keyPoints", direction);
+        motion.setAttribute("keyTimes", "0;1");
+        motion.setAttribute("calcMode", "linear");
+      }
+    });
     const bar = this.querySelector("#socBar");
     if (bar) bar.style.width = `${soc}%`;
 
