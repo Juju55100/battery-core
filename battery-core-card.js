@@ -1,4 +1,4 @@
-/* Battery Core Card v0.9.1 — standalone Home Assistant Lovelace card
+/* Battery Core Card v0.9.2 — standalone Home Assistant Lovelace card
  * Futuristic battery core with visual editor, adjustable scale and SOC ring.
  */
 
@@ -1053,6 +1053,215 @@ battery-core-card:not(.charging):not(.discharging) .core-energy-bed{
   100%{transform:translateY(-150px) scale(1.15);opacity:0}
 }
 
+
+/* =====================================================================
+   BATTERY CORE V0.9.2 — ORIGINAL CONCEPT / SVG ENERGY REACTOR
+   ===================================================================== */
+
+/* The reactor is now shorter, wider and visually closer to the concept. */
+battery-core-card .core-wrap{
+  height:calc(500px * var(--bc-scale,.75))!important;
+  min-height:calc(395px * var(--bc-scale,.75))!important;
+  isolation:isolate!important;
+}
+battery-core-card .battery-core.lithium-cylinder{
+  width:min(calc(198px * var(--bc-scale,.75)),48%)!important;
+  height:calc(300px * var(--bc-scale,.75))!important;
+  transform:translate(-50%,-53%)!important;
+  filter:
+    drop-shadow(0 0 6px rgba(220,255,255,.95))
+    drop-shadow(0 0 18px rgba(0,231,255,.72))
+    drop-shadow(0 0 36px rgba(0,105,255,.45))!important;
+}
+battery-core-card .lithium-cylinder .glass{
+  left:22px!important;right:22px!important;top:36px!important;bottom:36px!important;
+  border-radius:18px!important;
+}
+battery-core-card .lithium-cylinder .cap{
+  left:8px!important;right:8px!important;height:45px!important;
+}
+battery-core-card .lithium-cylinder .terminal{
+  width:35%!important;height:14px!important;
+}
+
+/* The HUD ring is deliberately secondary: larger, darker and behind the cell. */
+battery-core-card .ring-outer{
+  width:min(calc(420px * var(--bc-scale,.75)),94%)!important;
+  opacity:.82!important;
+  filter:drop-shadow(0 0 8px rgba(0,196,255,.36))!important;
+}
+battery-core-card .ring-mid{
+  width:min(calc(358px * var(--bc-scale,.75)),82%)!important;
+  opacity:.52!important;
+}
+battery-core-card .ticks{opacity:.36!important}
+battery-core-card .orbit{opacity:.34!important}
+
+/* Strong liquid body and an unmistakable SOC surface. */
+battery-core-card .lithium-cylinder .liquid{
+  overflow:visible!important;
+  background:
+    radial-gradient(ellipse at 50% 90%,rgba(210,255,255,.42),transparent 25%),
+    linear-gradient(to top,#0068ff 0%,#008fff 35%,rgba(0,204,255,.91) 72%,rgba(52,249,255,.76) 100%)!important;
+}
+battery-core-card .lithium-cylinder .wave{
+  display:block!important;
+  left:-45%!important;
+  width:190%!important;
+  height:42px!important;
+  top:-21px!important;
+  overflow:visible!important;
+  transform-origin:center!important;
+}
+battery-core-card .lithium-cylinder .wave::before{
+  content:""!important;
+  position:absolute!important;
+  left:0!important;right:0!important;top:15px!important;
+  height:9px!important;
+  border-radius:50%!important;
+  background:
+    linear-gradient(90deg,transparent 0%,#23eaff 12%,#a9ffff 31%,#fff 49%,#bfffff 66%,#24e8ff 87%,transparent 100%)!important;
+  box-shadow:
+    0 0 3px 2px #fff,
+    0 0 10px 4px #79ffff,
+    0 0 22px 8px rgba(0,232,255,.95),
+    0 0 42px 11px rgba(0,111,255,.70)!important;
+}
+battery-core-card .lithium-cylinder .wave::after{
+  content:""!important;
+  position:absolute!important;
+  left:9%!important;width:82%!important;top:18px!important;height:15px!important;
+  border-radius:50%!important;
+  border-top:3px solid rgba(235,255,255,.92)!important;
+  background:radial-gradient(ellipse at center,rgba(91,255,255,.38),rgba(0,181,255,.08) 62%,transparent 70%)!important;
+  box-shadow:0 -2px 10px #8effff,0 0 22px rgba(0,219,255,.85)!important;
+}
+battery-core-card .lithium-cylinder .wave1{animation:bc092WaveA 2.2s ease-in-out infinite!important}
+battery-core-card .lithium-cylinder .wave2{
+  top:-16px!important;opacity:.48!important;
+  animation:bc092WaveB 3.1s ease-in-out infinite!important;
+}
+
+/* Bubbles are clipped to the liquid because they live inside #liquid. */
+battery-core-card .lithium-cylinder .particles{
+  background:
+    radial-gradient(circle at 20% 72%,#cfffff 0 2px,transparent 3px),
+    radial-gradient(circle at 72% 58%,#b8ffff 0 2px,transparent 3px),
+    radial-gradient(circle at 48% 82%,#fff 0 1.5px,transparent 2.5px),
+    radial-gradient(circle at 35% 42%,#9dffff 0 1.5px,transparent 2.5px),
+    radial-gradient(circle at 80% 30%,#dfffff 0 1.5px,transparent 2.5px)!important;
+  background-size:48px 72px,61px 83px,39px 58px,54px 77px,44px 69px!important;
+  animation:bc092Bubbles 3.6s linear infinite!important;
+}
+
+/* Seven real curved energy veins, converging from the floor. */
+battery-core-card .energy-manifold{
+  position:absolute!important;
+  z-index:8!important;
+  left:50%!important;
+  bottom:calc(2px * var(--bc-scale,.75))!important;
+  width:min(calc(430px * var(--bc-scale,.75)),96%)!important;
+  height:calc(220px * var(--bc-scale,.75))!important;
+  transform:translateX(-50%)!important;
+  overflow:visible!important;
+  pointer-events:none!important;
+  opacity:var(--bc-flow-opacity,.65)!important;
+}
+battery-core-card .energy-manifold .energy-veins path{
+  fill:none!important;
+  stroke:url(#bcBeam092)!important;
+  stroke-width:3.5!important;
+  stroke-linecap:round!important;
+  stroke-dasharray:8 13!important;
+  animation:bc092Dash .9s linear infinite!important;
+}
+battery-core-card .energy-manifold .energy-comets circle{
+  fill:#efffff!important;
+  stroke:#54f8ff!important;
+  stroke-width:2!important;
+}
+battery-core-card .core-energy-bed{display:none!important}
+battery-core-card .energy-streams{opacity:.25!important}
+
+/* Reverse the visual direction in discharge. */
+battery-core-card.discharging .energy-manifold .energy-veins path{
+  stroke:#ffb52e!important;
+  animation-direction:reverse!important;
+}
+battery-core-card.discharging .energy-manifold .energy-comets circle{
+  fill:#fff7bd!important;stroke:#ff9e18!important;
+}
+battery-core-card.discharging .energy-manifold{
+  filter:drop-shadow(0 0 10px rgba(255,139,0,.75))!important;
+}
+
+/* Right telemetry: reserve value width instead of ellipsizing it. */
+battery-core-card .mini-grid>div{
+  display:grid!important;
+  grid-template-columns:28px minmax(72px,1fr) minmax(74px,auto)!important;
+  column-gap:8px!important;
+  align-items:center!important;
+  min-width:0!important;
+}
+battery-core-card .mini-grid label{
+  min-width:0!important;
+  white-space:nowrap!important;
+}
+battery-core-card .mini-grid b{
+  display:block!important;
+  min-width:74px!important;
+  max-width:none!important;
+  white-space:nowrap!important;
+  overflow:visible!important;
+  text-overflow:clip!important;
+  text-align:right!important;
+  font-size:clamp(11px,calc(14px * var(--bc-scale,.75)),14px)!important;
+}
+battery-core-card .side.right{overflow:visible!important}
+battery-core-card .side.right .metric{overflow:visible!important}
+
+/* Keep left and right text intact even with a large graphic setting. */
+battery-core-card .main-grid{
+  grid-template-columns:minmax(205px,30%) minmax(245px,40%) minmax(205px,30%)!important;
+}
+battery-core-card .side.left .big-value,
+battery-core-card .side.right .power-value,
+battery-core-card .side.right .time-value{
+  white-space:nowrap!important;
+}
+
+/* Extra glass highlights */
+battery-core-card .lithium-cylinder .glass-shine{
+  left:16%!important;width:12%!important;height:84%!important;opacity:.9!important;
+}
+battery-core-card .lithium-cylinder .glass::after{
+  right:13px!important;opacity:.7!important;
+}
+
+/* SOC readout stays centered in the lithium body. */
+battery-core-card .lithium-cylinder .core-readout{
+  font-size:calc(35px * var(--bc-scale,.75))!important;
+  letter-spacing:-1px!important;
+}
+
+@keyframes bc092WaveA{
+  0%,100%{transform:translateX(-4%) translateY(1px) rotate(-.7deg) scaleY(.84)}
+  25%{transform:translateX(1%) translateY(-3px) rotate(.45deg) scaleY(1.18)}
+  50%{transform:translateX(5%) translateY(1px) rotate(-.25deg) scaleY(.92)}
+  75%{transform:translateX(0) translateY(3px) rotate(.55deg) scaleY(1.13)}
+}
+@keyframes bc092WaveB{
+  0%,100%{transform:translateX(5%) rotate(.5deg) scaleY(.9)}
+  50%{transform:translateX(-5%) rotate(-.55deg) scaleY(1.14)}
+}
+@keyframes bc092Dash{
+  to{stroke-dashoffset:-42}
+}
+@keyframes bc092Bubbles{
+  from{background-position:0 70px,0 83px,0 58px,0 77px,0 69px}
+  to{background-position:0 -72px,0 -83px,0 -58px,0 -77px,0 -69px}
+}
+
 `;
 if (!document.head.querySelector('style[data-battery-core-card]')) {
   const style = document.createElement('style');
@@ -1585,12 +1794,38 @@ battery-core-card .charge-arrows { display:none !important; }
                 <div class="terminal terminal-bottom"></div>
               </div>
 
-              <div class="core-energy-bed" aria-hidden="true">
-                <span class="beam b1"></span><span class="beam b2"></span>
-                <span class="beam b3"></span><span class="beam b4"></span>
-                <span class="spark s1"></span><span class="spark s2"></span>
-                <span class="spark s3"></span><span class="spark s4"></span>
-              </div>
+              <svg class="energy-manifold" viewBox="0 0 420 210" preserveAspectRatio="none" aria-hidden="true">
+                <defs>
+                  <filter id="bcGlow092" x="-80%" y="-80%" width="260%" height="260%">
+                    <feGaussianBlur stdDeviation="4" result="blur"/>
+                    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                  </filter>
+                  <linearGradient id="bcBeam092" x1="0" y1="1" x2="0" y2="0">
+                    <stop offset="0" stop-color="#0078ff" stop-opacity="0"/>
+                    <stop offset=".28" stop-color="#00bfff" stop-opacity=".55"/>
+                    <stop offset=".72" stop-color="#39f8ff" stop-opacity=".95"/>
+                    <stop offset="1" stop-color="#eaffff"/>
+                  </linearGradient>
+                </defs>
+                <g class="energy-veins" filter="url(#bcGlow092)">
+                  <path d="M22 204 C72 190 105 150 174 87"/>
+                  <path d="M76 207 C116 178 139 139 185 83"/>
+                  <path d="M132 210 C157 168 174 124 197 78"/>
+                  <path d="M210 210 C210 163 210 116 210 72"/>
+                  <path d="M288 210 C263 168 246 124 223 78"/>
+                  <path d="M344 207 C304 178 281 139 235 83"/>
+                  <path d="M398 204 C348 190 315 150 246 87"/>
+                </g>
+                <g class="energy-comets" filter="url(#bcGlow092)">
+                  <circle r="4"><animateMotion dur="1.8s" repeatCount="indefinite" path="M22 204 C72 190 105 150 174 87"/></circle>
+                  <circle r="3"><animateMotion dur="1.45s" begin="-.6s" repeatCount="indefinite" path="M76 207 C116 178 139 139 185 83"/></circle>
+                  <circle r="3.5"><animateMotion dur="1.65s" begin="-1s" repeatCount="indefinite" path="M132 210 C157 168 174 124 197 78"/></circle>
+                  <circle r="4"><animateMotion dur="1.25s" begin="-.3s" repeatCount="indefinite" path="M210 210 C210 163 210 116 210 72"/></circle>
+                  <circle r="3.5"><animateMotion dur="1.6s" begin="-.8s" repeatCount="indefinite" path="M288 210 C263 168 246 124 223 78"/></circle>
+                  <circle r="3"><animateMotion dur="1.5s" begin="-1.2s" repeatCount="indefinite" path="M344 207 C304 178 281 139 235 83"/></circle>
+                  <circle r="4"><animateMotion dur="1.85s" begin="-.45s" repeatCount="indefinite" path="M398 204 C348 190 315 150 246 87"/></circle>
+                </g>
+              </svg>
               <div class="energy-streams">
                 <i></i><i></i><i></i><i></i><i></i><i></i>
               </div>
@@ -1706,6 +1941,8 @@ battery-core-card .charge-arrows { display:none !important; }
     const shell = this.querySelector(".shell");
     if (shell) {
       shell.style.setProperty("--bc-soc-angle", `${soc * 3.6}deg`);
+      shell.style.setProperty("--bc-soc", String(soc));
+      shell.style.setProperty("--bc-flow-opacity", String(Math.max(.35, Math.min(1, .35 + powerAbs / 3))));
       const scalePct = Math.max(50, Math.min(100, Number(this.config.scale_percent) || 75));
       shell.style.setProperty("--bc-scale", String(scalePct / 100));
     }
