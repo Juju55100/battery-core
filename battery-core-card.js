@@ -1,4 +1,4 @@
-/* Battery Core Card v0.9.7 — standalone Home Assistant Lovelace card
+/* Battery Core Card v0.9.8 — standalone Home Assistant Lovelace card
  * Futuristic battery core with visual editor, adjustable scale and SOC ring.
  */
 
@@ -2062,8 +2062,6 @@ class BatteryCoreCard extends HTMLElement {
 
           <footer class="footer">
             <div><i class="dot"></i> Mode : <b id="mode">STANDBY</b></div>
-            <div>◉ <b>BMS OK</b></div>
-            <div>⌁ <b>EN LIGNE</b></div>
             <div class="clean">♧ <b>ÉNERGIE PROPRE</b></div>
           </footer>
         </div>
@@ -2129,10 +2127,20 @@ class BatteryCoreCard extends HTMLElement {
     set("temperature", telemetry(c.temperature, 1, "°C"));
     set("current", telemetry(c.current, 2, "A"));
 
-    const solar = this._state(c.solar_power, "—");
-    const house = this._state(c.house_power, "—");
-    set("solar", solar === "—" ? "—" : `${solar} kW`);
-    set("house", house === "—" ? "—" : `${house} kW`);
+    // PV and house sensors can report W or kW. Never interpret an energy
+    // sensor (kWh) as instantaneous power or show missing data as zero.
+    const flowPower = (entity) => {
+      const sensor = this._hass?.states?.[entity];
+      const raw = String(sensor?.state ?? "").trim();
+      if (!raw || !Number.isFinite(Number(raw))) return "—";
+      const unit = String(sensor?.attributes?.unit_of_measurement ?? "").trim();
+      const factors = { W: .001, w: .001, kW: 1, kw: 1, MW: 1000, mW: .000001, "": 1 };
+      if (!Object.prototype.hasOwnProperty.call(factors, unit)) return "—";
+      const rounded = Number((Number(raw) * factors[unit]).toFixed(2));
+      return `${(Object.is(rounded, -0) ? 0 : rounded).toFixed(2).replace("-", "−")}\u00a0kW`;
+    };
+    set("solar", flowPower(c.solar_power));
+    set("house", flowPower(c.house_power));
 
     const shell = this.querySelector(".shell");
     if (shell) {
@@ -2299,12 +2307,16 @@ class BatteryCoreCardEditor extends HTMLElement {
           ${this._entityRow("Batterie : température", "temperature")}
           <div style="height:14px"></div>
           ${this._entityRow("Batterie : courant", "current")}
+          <div style="height:14px"></div>
+          ${this._entityRow("Solaire PV : puissance (W ou kW)", "solar_power")}
+          <div style="height:14px"></div>
+          ${this._entityRow("Maison : consommation instantanée (W ou kW)", "house_power")}
         </div>
       </div>
     `;
 
     // Configure Home Assistant's native entity pickers.
-    const pickerIds = ["battery_soc", "battery_power", "time_remaining", "voltage", "temperature", "current"];
+    const pickerIds = ["battery_soc", "battery_power", "time_remaining", "voltage", "temperature", "current", "solar_power", "house_power"];
     pickerIds.forEach((id) => {
       const picker = this.querySelector(`#${id}`);
       if (!picker) return;
