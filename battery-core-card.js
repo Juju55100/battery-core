@@ -1,12 +1,653 @@
-/* Battery Core Card v0.8.1 — standalone Home Assistant Lovelace card
+/* Battery Core Card v0.8.2 — standalone Home Assistant Lovelace card
  * Futuristic battery core with visual editor, adjustable scale and SOC ring.
  */
 
 const BATTERY_CORE_STYLE = `
-/* V0.8: visual styling is maintained in battery-core-card.css.
-   This tiny fallback only prevents an unstyled flash if the CSS resource is late. */
-battery-core-card { display:block; width:100%; }
-battery-core-card .battery-card { background:transparent!important; box-shadow:none!important; border:0!important; }
+battery-core-card {
+  display: block;
+  width: 100%;
+  --bc-bg: #020b18;
+  --bc-blue: #00d9ff;
+  --bc-blue2: #1689ff;
+  --bc-green: #55ff8a;
+  --bc-text: #eaf8ff;
+  --bc-muted: #80b7d2;
+}
+
+battery-core-card .battery-card {
+  overflow: hidden;
+  background: transparent !important;
+  box-shadow: none !important;
+  border: 0 !important;
+}
+
+battery-core-card .shell {
+  position: relative;
+  width: 100%;
+  min-height: 520px;
+  padding: 22px;
+  color: var(--bc-text);
+  background:
+    radial-gradient(circle at 50% 44%, rgba(0, 150, 255, .13), transparent 26%),
+    radial-gradient(circle at 50% 100%, rgba(0, 110, 255, .11), transparent 34%),
+    linear-gradient(150deg, #020914 0%, #041529 48%, #020812 100%);
+  border: 1px solid rgba(0, 193, 255, .65);
+  border-radius: 22px;
+  box-sizing: border-box;
+  overflow: hidden;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+battery-core-card .shell::before {
+  content:"";
+  position:absolute; inset:0;
+  background:
+    linear-gradient(rgba(0,170,255,.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,170,255,.035) 1px, transparent 1px);
+  background-size: 36px 36px;
+  mask-image: linear-gradient(to bottom, black, transparent 85%);
+  pointer-events:none;
+}
+
+battery-core-card .top-corner {
+  position:absolute; right:-70px; top:-70px;
+  width:190px; height:190px;
+  border:1px solid rgba(0,180,255,.5);
+  border-radius: 0 0 0 90px;
+  transform: rotate(45deg);
+  opacity:.45;
+}
+
+battery-core-card .header {
+  position:relative;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  z-index:2;
+}
+
+battery-core-card .brand { display:flex; gap:14px; align-items:center; }
+battery-core-card .eyebrow { font-size:16px; letter-spacing:3px; font-weight:800; }
+battery-core-card .model { font-size:26px; font-weight:800; color:var(--bc-blue); letter-spacing:1px; }
+battery-core-card .capacity { color:#8dc6e7; font-size:17px; margin-top:2px; }
+battery-core-card .bolt { font-size:34px; color:#10d8ff; filter:drop-shadow(0 0 10px #00d9ff); }
+
+battery-core-card .battery-icon {
+  width:42px; height:62px; border:5px solid var(--bc-blue); border-radius:8px;
+  position:relative; box-sizing:border-box; box-shadow:0 0 15px rgba(0,217,255,.6), inset 0 0 12px rgba(0,217,255,.25);
+}
+battery-core-card .battery-icon::before {
+  content:""; position:absolute; left:10px; right:10px; top:-11px; height:8px;
+  border-radius:3px; background:var(--bc-blue);
+}
+battery-core-card .battery-icon span {
+  position:absolute; left:7px; right:7px; bottom:7px; height:62%;
+  background:linear-gradient(#00e7ff,#147cff);
+  box-shadow:0 0 10px #00d9ff;
+}
+
+battery-core-card .main-grid {
+  position: relative;
+  z-index: 2;
+
+  display: grid;
+  grid-template-columns: 150px minmax(220px, 1fr) 150px;
+
+  gap: 8px;
+  align-items: center;
+
+  min-height: 380px;
+}
+
+battery-core-card .side { z-index:5; }
+battery-core-card .metric {
+  border-bottom:1px solid rgba(40,153,220,.25);
+  padding:17px 8px;
+}
+battery-core-card .metric-title { color:#9ed0e9; font-size:13px; letter-spacing:1px; margin-bottom:10px; }
+battery-core-card .soc-line { display:flex; align-items:center; gap:10px; }
+battery-core-card .soc-line strong { font-size:38px; letter-spacing:-1px; }
+battery-core-card .mini-battery {
+  width:38px; height:38px; border:2px solid var(--bc-blue); border-radius:50%;
+  display:grid; place-items:center; color:var(--bc-blue); box-shadow:0 0 10px rgba(0,217,255,.4);
+}
+battery-core-card .bar, battery-core-card .power-bar {
+  height:9px; border-radius:10px; overflow:hidden; background:#0b2943; margin-top:12px;
+  border:1px solid rgba(0,217,255,.4);
+}
+battery-core-card .bar div, battery-core-card .power-bar div {
+  height:100%; width:0; transition:width .8s ease;
+  background:linear-gradient(90deg,#00bfff,#55ff8a);
+  box-shadow:0 0 12px #00d9ff;
+}
+battery-core-card .big-value { font-size:24px; font-weight:700; }
+battery-core-card .big-value small { font-size:14px; color:#9cc4d8; }
+battery-core-card .metric-symbol { color:var(--bc-blue); margin-right:7px; }
+battery-core-card .subvalue { color:#7ea8bf; font-size:13px; margin-top:4px; }
+battery-core-card .power-value { font-size:30px; font-weight:800; color:#a8f4ff; text-shadow:0 0 12px rgba(0,217,255,.45); }
+battery-core-card .state-label { color:var(--bc-green); font-weight:800; margin-top:4px; letter-spacing:1px; }
+battery-core-card .time-value { font-size:34px; font-weight:700; margin-top:5px; }
+battery-core-card .mini-grid { display:grid; gap:12px; }
+battery-core-card .mini-grid > div {
+  display:grid; grid-template-columns:26px 1fr auto; gap:5px; align-items:center;
+  color:#9ed0e9;
+}
+battery-core-card .mini-grid span { color:var(--bc-blue); font-size:20px; }
+battery-core-card .mini-grid label { font-size:12px; }
+battery-core-card .mini-grid b { color:white; font-size:14px; }
+
+battery-core-card .ring-outer {
+  width: 320px;
+  height: 320px;
+
+  border: 8px solid rgba(0,155,255,.15);
+  border-top-color: #00d9ff;
+  border-right-color: #1689ff;
+
+  box-shadow:
+    0 0 20px rgba(0,217,255,.35),
+    inset 0 0 20px rgba(0,120,255,.15);
+
+  animation: bcSpin 16s linear infinite;
+}
+battery-core-card .ring {
+  position:absolute; border-radius:50%; pointer-events:none;
+}
+battery-core-card .ring-outer {
+  width:430px; height:430px;
+  border:10px solid rgba(0,155,255,.15);
+  border-top-color:#00d9ff;
+  border-right-color:#1689ff;
+  box-shadow:0 0 20px rgba(0,217,255,.35), inset 0 0 20px rgba(0,120,255,.15);
+  animation: bcSpin 16s linear infinite;
+}
+battery-core-card .ticks {
+  position: absolute;
+
+  width: 340px;
+  height: 340px;
+
+  border-radius: 50%;
+
+  background:
+    repeating-conic-gradient(
+      from 0deg,
+      rgba(70,190,255,.5) 0deg 1deg,
+      transparent 1deg 9deg
+    );
+
+  mask-image:
+    radial-gradient(
+      circle,
+      transparent 66%,
+      black 67%,
+      black 68%,
+      transparent 69%
+    );
+
+  opacity: .65;
+}
+battery-core-card .ticks {
+  position:absolute; width:455px; height:455px; border-radius:50%;
+  background:repeating-conic-gradient(from 0deg, rgba(70,190,255,.5) 0deg 1deg, transparent 1deg 9deg);
+  mask-image:radial-gradient(circle, transparent 66%, black 67%, black 68%, transparent 69%);
+  opacity:.65;
+}
+battery-core-card .orbit {
+  position:absolute; width:445px; height:170px; border:1px solid rgba(0,195,255,.4); border-radius:50%;
+  transform:rotate(25deg); box-shadow:0 0 8px rgba(0,180,255,.2);
+}
+battery-core-card .orbit-b { transform:rotate(-35deg); opacity:.5; }
+
+battery-core-card .core-readout {
+  position: absolute;
+  inset: 0;
+
+  display: grid;
+  place-items: center;
+
+  z-index: 4;
+
+  font-size: 27px;
+  font-weight: 800;
+
+  text-shadow:
+    0 0 15px #00d9ff;
+}
+battery-core-card .cap, battery-core-card .base {
+  position:absolute; left:7px; right:7px; height:36px; border-radius:24px;
+  background:linear-gradient(#d8fbff,#3981a4 35%,#082d49 60%,#77dfff);
+  border:2px solid #63e8ff; z-index:4;
+}
+battery-core-card .cap { top:0; }
+battery-core-card .base { bottom:0; }
+battery-core-card .glass {
+  position:absolute; left:15px; right:15px; top:24px; bottom:24px;
+  border:2px solid rgba(91,231,255,.85); border-radius:28px;
+  overflow:hidden; background:linear-gradient(90deg, rgba(0,180,255,.06), rgba(255,255,255,.08), rgba(0,180,255,.03));
+  box-shadow:inset 0 0 22px rgba(0,205,255,.25);
+}
+battery-core-card .liquid {
+  position:absolute; left:0; right:0; bottom:0; height:0%;
+  background:linear-gradient(to top, rgba(0,91,255,.95), rgba(0,216,255,.7));
+  box-shadow:0 -8px 30px rgba(0,225,255,.8);
+  transition:height 1s cubic-bezier(.2,.8,.2,1);
+  overflow:hidden;
+}
+battery-core-card .wave {
+  position:absolute; left:-30%; width:160%; height:35px; top:-15px;
+  border-radius:50%; border-top:3px solid rgba(130,250,255,.9);
+  animation:bcWave 4s ease-in-out infinite;
+}
+battery-core-card .wave2 { top:-10px; opacity:.35; animation-delay:-2s; }
+battery-core-card .particles {
+  position:absolute; inset:0;
+  background-image:
+    radial-gradient(circle, rgba(170,255,255,.9) 0 1px, transparent 2px),
+    radial-gradient(circle, rgba(255,255,255,.6) 0 1px, transparent 2px);
+  background-size:29px 41px, 43px 57px;
+  animation:bcRise 5s linear infinite;
+  opacity:.8;
+}
+battery-core-card .core-readout {
+  position:absolute; inset:0; display:grid; place-items:center; z-index:4;
+  font-size:35px; font-weight:800; text-shadow:0 0 15px #00d9ff;
+}
+battery-core-card .energy-streams {
+  position:absolute; bottom:18px; width:240px; height:130px; z-index:2;
+  display:flex; justify-content:center; gap:30px; overflow:hidden;
+}
+battery-core-card .energy-streams i {
+  width:5px; height:125px; border-radius:50%;
+  background:linear-gradient(transparent,#00eaff,transparent);
+  box-shadow:0 0 12px #00d9ff;
+  animation:bcStream 1.25s linear infinite;
+  opacity:.85;
+}
+battery-core-card .energy-streams i:nth-child(2){animation-delay:-.25s;height:90px}
+battery-core-card .energy-streams i:nth-child(3){animation-delay:-.5s;height:115px}
+battery-core-card .energy-streams i:nth-child(4){animation-delay:-.75s;height:75px}
+battery-core-card .energy-streams i:nth-child(5){animation-delay:-1s;height:105px}
+battery-core-card .energy-streams i:nth-child(6){animation-delay:-.4s;height:65px}
+
+battery-core-card .status-pill {
+  position:absolute; bottom:4px; color:#58ff92; font-size:11px; letter-spacing:2px;
+  padding:5px 11px; border:1px solid rgba(70,255,145,.35); border-radius:20px;
+  background:rgba(0,35,28,.45);
+}
+
+battery-core-card .flow {
+  position:relative; z-index:4; display:flex; align-items:center; justify-content:space-around;
+  gap:8px; padding:18px 20px; border:1px solid rgba(0,170,255,.4); border-radius:18px;
+  background:rgba(1,18,36,.72); box-shadow:inset 0 0 25px rgba(0,120,255,.08);
+}
+battery-core-card .flow-node { display:flex; gap:9px; align-items:center; min-width:130px; }
+battery-core-card .flow-node > span { font-size:28px; color:#5edfff; }
+battery-core-card .flow-node small { display:block; color:#8dbbd0; font-size:10px; letter-spacing:1px; }
+battery-core-card .flow-node b { font-size:18px; }
+battery-core-card .solar .sun { color:#ffd74a; }
+battery-core-card .flow-arrows { color:#1769b8; font-size:28px; letter-spacing:-6px; transition:.3s; }
+battery-core-card .flow-arrows.active { color:#00d9ff; text-shadow:0 0 14px #00d9ff; animation:bcArrow 1s linear infinite; }
+
+battery-core-card .footer {
+  position:relative; z-index:4; display:flex; justify-content:space-around; flex-wrap:wrap;
+  gap:12px; padding:17px 5px 2px; color:#82b5cf; font-size:12px;
+}
+battery-core-card .footer b { color:#bceeff; }
+battery-core-card .footer .clean b { color:#4dff89; }
+battery-core-card .dot { display:inline-block; width:9px; height:9px; background:#4dff89; border-radius:50%; box-shadow:0 0 10px #4dff89; margin-right:6px; }
+
+battery-core-card.discharging .liquid { background:linear-gradient(to top, rgba(255,116,0,.75), rgba(255,210,50,.7)); }
+battery-core-card.discharging .ring-outer { border-top-color:#ffb52e; border-right-color:#ff6b35; }
+battery-core-card.discharging .energy-streams i { animation-direction:reverse; background:linear-gradient(transparent,#ffb52e,transparent); box-shadow:0 0 12px #ff9d00; }
+battery-core-card.discharging .state-label,
+battery-core-card.discharging .status-pill { color:#ffc44c; border-color:rgba(255,180,40,.4); }
+
+battery-core-card.full .ring-outer { animation-duration:5s; box-shadow:0 0 35px rgba(0,230,255,.8), inset 0 0 30px rgba(0,190,255,.35); }
+battery-core-card.empty .liquid { box-shadow:none; }
+
+@keyframes bcSpin { to { transform:rotate(360deg); } }
+@keyframes bcSpinReverse { to { transform:rotate(-360deg); } }
+@keyframes bcWave { 0%,100%{transform:translateX(-2%) rotate(0deg)}50%{transform:translateX(2%) rotate(1deg)} }
+@keyframes bcRise { from{background-position:0 0,0 0} to{background-position:0 -220px,0 -300px} }
+@keyframes bcStream { from{transform:translateY(120px);opacity:0} 20%{opacity:1} 100%{transform:translateY(-30px);opacity:0} }
+@keyframes bcArrow { 50% { transform:translateX(6px); } }
+
+@media (max-width: 900px) {
+  battery-core-card .shell { min-height:0; }
+  battery-core-card .main-grid { grid-template-columns:1fr; }
+  battery-core-card .core-wrap { order:-1; height:480px; }
+  battery-core-card .side.left, battery-core-card .side.right { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  battery-core-card .metric { padding:12px 6px; }
+}
+@media (max-width: 560px) {
+  battery-core-card .shell { padding:12px; border-radius:16px; }
+  battery-core-card .ring-outer { width:320px;height:320px; }
+  battery-core-card .ring-mid { width:275px;height:275px; }
+  battery-core-card .ticks { width:345px;height:345px; }
+  battery-core-card .orbit { width:330px; }
+  battery-core-card .core-wrap { height:400px; }
+  battery-core-card .side.left, battery-core-card .side.right { grid-template-columns:1fr; }
+  battery-core-card .flow { flex-wrap:wrap; }
+  battery-core-card .flow-arrows { display:none; }
+}
+
+
+/* ========================================================================
+   BATTERY CORE CARD V0.8
+   External authoritative overrides
+   ======================================================================== */
+
+/* Landscape architecture: SOC | CORE | POWER */
+battery-core-card .shell {
+  width:100%;
+  max-width:100%;
+  min-height:0;
+  box-sizing:border-box;
+  overflow:hidden;
+}
+battery-core-card .main-grid {
+  width:100%;
+  max-width:100%;
+  display:grid;
+  grid-template-columns:30% 40% 30%;
+  align-items:center;
+  gap:0;
+  min-height:0;
+  box-sizing:border-box;
+}
+battery-core-card .main-grid > * { min-width:0; }
+battery-core-card .side.left { grid-column:1; grid-row:1; padding-right:8px; }
+battery-core-card .core-wrap {
+  grid-column:2; grid-row:1;
+  position:relative;
+  width:100%;
+  min-width:0;
+  min-height:280px;
+  height:calc(430px * var(--bc-scale, .75));
+  display:grid;
+  place-items:center;
+  overflow:visible;
+}
+battery-core-card .side.right { grid-column:3; grid-row:1; padding-left:8px; overflow:hidden; }
+
+/* Core geometry: single definitions only */
+battery-core-card .ring {
+  position:absolute;
+  left:50%;
+  border-radius:50%;
+  pointer-events:none;
+  transform:translateX(-50%);
+}
+battery-core-card .ring-outer {
+  width:calc(350px * var(--bc-scale, .75));
+  height:calc(350px * var(--bc-scale, .75));
+  border:0;
+  padding:9px;
+  box-sizing:border-box;
+  background:conic-gradient(
+    from -90deg,
+    #00eaff 0deg,
+    #1689ff var(--bc-soc-angle,0deg),
+    rgba(0,155,255,.12) var(--bc-soc-angle,0deg),
+    rgba(0,155,255,.12) 360deg
+  );
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;
+  mask-composite:exclude;
+  box-shadow:0 0 20px rgba(0,217,255,.35);
+}
+battery-core-card .ring-mid {
+  width:calc(295px * var(--bc-scale, .75));
+  height:calc(295px * var(--bc-scale, .75));
+  border:2px dashed rgba(0,205,255,.42);
+  box-shadow:0 0 25px rgba(0,160,255,.18);
+}
+battery-core-card .ticks {
+  position:absolute;
+  left:50%;
+  width:calc(372px * var(--bc-scale, .75));
+  height:calc(372px * var(--bc-scale, .75));
+  transform:translateX(-50%);
+  border-radius:50%;
+  background:repeating-conic-gradient(from 0deg,rgba(70,190,255,.5) 0deg 1deg,transparent 1deg 9deg);
+  mask-image:radial-gradient(circle,transparent 66%,black 67%,black 68%,transparent 69%);
+  opacity:.65;
+}
+battery-core-card .orbit {
+  position:absolute;
+  left:50%;
+  width:calc(360px * var(--bc-scale, .75));
+  height:calc(140px * var(--bc-scale, .75));
+  border:1px solid rgba(0,195,255,.4);
+  border-radius:50%;
+  transform:translateX(-50%) rotate(25deg);
+  box-shadow:0 0 8px rgba(0,180,255,.2);
+}
+battery-core-card .orbit-b { transform:translateX(-50%) rotate(-35deg); opacity:.5; }
+
+battery-core-card .battery-core {
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:calc(118px * var(--bc-scale, .75));
+  height:calc(270px * var(--bc-scale, .75));
+  transform:translate(-50%,-50%);
+  z-index:8;
+  filter:drop-shadow(0 0 20px rgba(0,204,255,.6));
+}
+battery-core-card .cap,
+battery-core-card .base {
+  position:absolute;
+  left:7px; right:7px;
+  height:36px;
+  border-radius:24px;
+  background:linear-gradient(#d8fbff,#3981a4 35%,#082d49 60%,#77dfff);
+  border:2px solid #63e8ff;
+  z-index:6;
+}
+battery-core-card .cap { top:0; }
+battery-core-card .base { bottom:0; }
+
+/* Liquid reservoir */
+battery-core-card .glass {
+  position:absolute;
+  left:15px; right:15px; top:24px; bottom:24px;
+  border:2px solid rgba(91,231,255,.85);
+  border-radius:28px;
+  overflow:hidden;
+  background:linear-gradient(90deg,rgba(0,180,255,.05),rgba(255,255,255,.10),rgba(0,180,255,.03));
+  box-shadow:inset 0 0 22px rgba(0,205,255,.25);
+}
+battery-core-card .liquid {
+  position:absolute;
+  left:0; right:0; bottom:0;
+  height:0%;
+  overflow:visible;
+  background:linear-gradient(to top,rgba(0,91,255,.94),rgba(0,216,255,.62));
+  box-shadow:0 -4px 22px rgba(0,225,255,.62);
+  transition:height .8s cubic-bezier(.2,.8,.2,1);
+}
+
+/* The floating water line follows the liquid top, therefore the exact SOC. */
+battery-core-card .wave {
+  position:absolute;
+  left:-32%;
+  top:-11px;
+  width:164%;
+  height:24px;
+  border:0;
+  border-radius:50%;
+  background:transparent;
+  box-shadow:none;
+  pointer-events:none;
+}
+battery-core-card .wave::before {
+  content:"";
+  position:absolute;
+  left:0; top:8px;
+  width:100%; height:5px;
+  border-radius:50%;
+  background:linear-gradient(90deg,
+    transparent 0%,
+    rgba(90,235,255,.35) 10%,
+    rgba(190,255,255,.95) 30%,
+    #fff 50%,
+    rgba(105,245,255,.95) 70%,
+    rgba(40,210,255,.3) 90%,
+    transparent 100%);
+  box-shadow:0 0 5px #fff,0 0 12px #00eaff,0 0 20px rgba(0,170,255,.65);
+}
+battery-core-card .wave::after {
+  content:"";
+  position:absolute;
+  left:5%; top:12px;
+  width:90%; height:7px;
+  border-radius:50%;
+  background:rgba(55,225,255,.16);
+  filter:blur(2px);
+}
+battery-core-card .wave1 { animation:bcV08WaveA 2.7s ease-in-out infinite; }
+battery-core-card .wave2 { top:-7px; opacity:.45; animation:bcV08WaveB 3.3s ease-in-out infinite; }
+
+/* Old chunky visuals disabled */
+battery-core-card .charge-arrows { display:none !important; }
+
+/* Fine vertical energy flow inside the battery */
+battery-core-card .energy-particles {
+  position:absolute;
+  inset:25px 12px;
+  z-index:3;
+  overflow:hidden;
+  pointer-events:none;
+  border-radius:20px;
+}
+battery-core-card .energy-particles i {
+  position:absolute;
+  bottom:-16px;
+  width:4px;
+  height:13px;
+  border-radius:999px;
+  opacity:0;
+  background:linear-gradient(to top,rgba(0,190,255,0),rgba(110,250,255,.95),#fff);
+  box-shadow:0 0 5px #fff,0 0 10px #00e1ff;
+  animation:bcV08Rise 2s linear infinite;
+}
+battery-core-card .energy-particles i:nth-child(1){left:14%}
+battery-core-card .energy-particles i:nth-child(2){left:29%;height:9px}
+battery-core-card .energy-particles i:nth-child(3){left:44%;height:17px}
+battery-core-card .energy-particles i:nth-child(4){left:59%;height:11px}
+battery-core-card .energy-particles i:nth-child(5){left:73%;height:14px}
+battery-core-card .energy-particles i:nth-child(6){left:86%;height:8px}
+
+/* Existing dotted particles become subtle background bubbles only */
+battery-core-card .particles {
+  opacity:.34;
+  animation:bcV08Bubbles 7s linear infinite;
+}
+
+/* Discharge reverses the internal flow and changes its temperature */
+battery-core-card.discharging .liquid {
+  background:linear-gradient(to top,rgba(255,105,0,.74),rgba(255,205,45,.62));
+  box-shadow:0 -4px 22px rgba(255,150,20,.55);
+}
+battery-core-card.discharging .ring-outer {
+  background:conic-gradient(
+    from -90deg,
+    #ffd84a 0deg,
+    #ff7138 var(--bc-soc-angle,0deg),
+    rgba(255,130,40,.12) var(--bc-soc-angle,0deg),
+    rgba(255,130,40,.12) 360deg
+  );
+}
+battery-core-card.discharging .wave::before {
+  background:linear-gradient(90deg,transparent,rgba(255,220,110,.85),#fff4c8,rgba(255,155,45,.9),transparent);
+  box-shadow:0 0 5px #fff2c0,0 0 12px #ff9d00,0 0 20px rgba(255,110,20,.6);
+}
+battery-core-card.discharging .energy-particles i {
+  top:-16px;
+  bottom:auto;
+  background:linear-gradient(to bottom,rgba(255,190,70,0),rgba(255,195,70,.95),#fff3b0);
+  box-shadow:0 0 5px #fff3b0,0 0 10px #ff911e;
+  animation-name:bcV08Fall;
+}
+battery-core-card:not(.charging):not(.discharging) .energy-particles i {
+  opacity:0;
+  animation-play-state:paused;
+}
+
+/* Readout stays above the flow */
+battery-core-card .core-readout {
+  position:absolute;
+  inset:0;
+  z-index:5;
+  display:grid;
+  place-items:center;
+  font-size:calc(29px * var(--bc-scale,.75));
+  font-weight:800;
+  text-shadow:0 0 15px #00d9ff;
+}
+
+/* Don't truncate charge-time text in landscape. */
+battery-core-card .time-value {
+  font-size:clamp(18px,calc(30px * var(--bc-scale,.75)),30px);
+  white-space:normal;
+  overflow:visible;
+  text-overflow:clip;
+  line-height:1.08;
+}
+
+/* Bottom external energy streams remain centered. */
+battery-core-card .energy-streams {
+  position:absolute;
+  left:50%;
+  bottom:18px;
+  width:calc(240px * var(--bc-scale,.75));
+  height:calc(130px * var(--bc-scale,.75));
+  transform:translateX(-50%);
+}
+
+/* Size presets now alter density, while scale_percent alters --bc-scale. */
+battery-core-card .shell.size-compact { padding:14px; }
+battery-core-card .shell.size-normal { padding:18px; }
+battery-core-card .shell.size-large { padding:22px; }
+battery-core-card .shell.size-fullscreen { padding:28px; }
+
+@keyframes bcV08WaveA {
+  0%,100%{transform:translateX(-4%) translateY(1px) scaleY(.85)}
+  50%{transform:translateX(4%) translateY(-2px) scaleY(1.18)}
+}
+@keyframes bcV08WaveB {
+  0%,100%{transform:translateX(5%) translateY(-1px)}
+  50%{transform:translateX(-5%) translateY(2px)}
+}
+@keyframes bcV08Rise {
+  0%{transform:translateY(0) scale(.65);opacity:0}
+  12%{opacity:.9}
+  72%{opacity:.72}
+  100%{transform:translateY(-210px) scale(1.05);opacity:0}
+}
+@keyframes bcV08Fall {
+  0%{transform:translateY(0) scale(.65);opacity:0}
+  12%{opacity:.9}
+  72%{opacity:.72}
+  100%{transform:translateY(210px) scale(1.05);opacity:0}
+}
+@keyframes bcV08Bubbles {
+  from{background-position:0 0,0 0}
+  to{background-position:0 -250px,0 -330px}
+}
+
+/* Only stack on genuinely narrow phone cards. */
+@media (max-width:520px) {
+  battery-core-card .main-grid {
+    grid-template-columns:1fr;
+  }
+  battery-core-card .core-wrap { grid-column:1; grid-row:1; }
+  battery-core-card .side.left { grid-column:1; grid-row:2; padding:0; }
+  battery-core-card .side.right { grid-column:1; grid-row:3; padding:0; }
+}
+
 `;
 if (!document.head.querySelector('style[data-battery-core-card]')) {
   const style = document.createElement('style');
@@ -16,25 +657,7 @@ if (!document.head.querySelector('style[data-battery-core-card]')) {
 }
 
 
-function batteryCoreEnsureCss() {
-  if (document.querySelector('link[data-battery-core-css="v0.8"]')) return;
-  try {
-    const scripts = [...document.querySelectorAll('script[src]')];
-    const own = scripts.find(s => /battery-core-card(?:-v[\d.]+)?\.js(?:\?|$)/.test(s.src));
-    const href = own
-      ? new URL("battery-core-card.css", own.src).href
-      : "/local/community/battery-core/battery-core-card.css";
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = href;
-    link.dataset.batteryCoreCss = "v0.8";
-    document.head.appendChild(link);
-  } catch (e) {
-    console.warn("Battery Core Card: impossible de charger battery-core-card.css", e);
-  }
-}
-batteryCoreEnsureCss();
-
+// V0.8.2: complete CSS is embedded in JS; external CSS remains optional/available.
 class BatteryCoreCard extends HTMLElement {
   static getStubConfig() {
     return {
