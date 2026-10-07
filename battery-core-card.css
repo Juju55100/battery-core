@@ -18,7 +18,8 @@ battery-core-card .battery-card {
 
 battery-core-card .shell {
   position: relative;
-  min-height: 760px;
+  width: 100%;
+  min-height: 520px;
   padding: 22px;
   color: var(--bc-text);
   background:
@@ -81,12 +82,16 @@ battery-core-card .battery-icon span {
 }
 
 battery-core-card .main-grid {
-  position:relative; z-index:2;
-  display:grid;
-  grid-template-columns: minmax(190px,1fr) minmax(360px,1.7fr) minmax(190px,1fr);
-  gap:16px;
-  align-items:center;
-  min-height:515px;
+  position: relative;
+  z-index: 2;
+
+  display: grid;
+  grid-template-columns: 150px minmax(220px, 1fr) 150px;
+
+  gap: 8px;
+  align-items: center;
+
+  min-height: 380px;
 }
 
 battery-core-card .side { z-index:5; }
@@ -126,8 +131,19 @@ battery-core-card .mini-grid span { color:var(--bc-blue); font-size:20px; }
 battery-core-card .mini-grid label { font-size:12px; }
 battery-core-card .mini-grid b { color:white; font-size:14px; }
 
-battery-core-card .core-wrap {
-  position:relative; height:500px; display:grid; place-items:center;
+battery-core-card .ring-outer {
+  width: 320px;
+  height: 320px;
+
+  border: 8px solid rgba(0,155,255,.15);
+  border-top-color: #00d9ff;
+  border-right-color: #1689ff;
+
+  box-shadow:
+    0 0 20px rgba(0,217,255,.35),
+    inset 0 0 20px rgba(0,120,255,.15);
+
+  animation: bcSpin 16s linear infinite;
 }
 battery-core-card .ring {
   position:absolute; border-radius:50%; pointer-events:none;
@@ -140,11 +156,31 @@ battery-core-card .ring-outer {
   box-shadow:0 0 20px rgba(0,217,255,.35), inset 0 0 20px rgba(0,120,255,.15);
   animation: bcSpin 16s linear infinite;
 }
-battery-core-card .ring-mid {
-  width:365px; height:365px;
-  border:2px dashed rgba(0,205,255,.42);
-  box-shadow:0 0 25px rgba(0,160,255,.18);
-  animation: bcSpinReverse 22s linear infinite;
+battery-core-card .ticks {
+  position: absolute;
+
+  width: 340px;
+  height: 340px;
+
+  border-radius: 50%;
+
+  background:
+    repeating-conic-gradient(
+      from 0deg,
+      rgba(70,190,255,.5) 0deg 1deg,
+      transparent 1deg 9deg
+    );
+
+  mask-image:
+    radial-gradient(
+      circle,
+      transparent 66%,
+      black 67%,
+      black 68%,
+      transparent 69%
+    );
+
+  opacity: .65;
 }
 battery-core-card .ticks {
   position:absolute; width:455px; height:455px; border-radius:50%;
@@ -158,9 +194,20 @@ battery-core-card .orbit {
 }
 battery-core-card .orbit-b { transform:rotate(-35deg); opacity:.5; }
 
-battery-core-card .battery-core {
-  position:relative; z-index:8; width:145px; height:330px; margin-top:-5px;
-  filter:drop-shadow(0 0 25px rgba(0,204,255,.6));
+battery-core-card .core-readout {
+  position: absolute;
+  inset: 0;
+
+  display: grid;
+  place-items: center;
+
+  z-index: 4;
+
+  font-size: 27px;
+  font-weight: 800;
+
+  text-shadow:
+    0 0 15px #00d9ff;
 }
 battery-core-card .cap, battery-core-card .base {
   position:absolute; left:7px; right:7px; height:36px; border-radius:24px;
