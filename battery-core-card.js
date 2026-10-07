@@ -1,4 +1,4 @@
-/* Battery Core Card v0.4 — standalone Home Assistant Lovelace card
+/* Battery Core Card v0.5 — standalone Home Assistant Lovelace card
  * Futuristic battery core with visual editor, adjustable scale and SOC ring.
  */
 
@@ -619,7 +619,142 @@ class BatteryCoreCard extends HTMLElement {
     this.innerHTML = `
       <style>
         ${BATTERY_CORE_STYLE}
-      </style>
+      
+/* =========================================================
+   V0.5 HARD LAYOUT FIX
+   Percentage columns prevent the right panel from being pushed
+   outside the Lovelace preview/card.
+   ========================================================= */
+battery-core-card .shell {
+  width:100% !important;
+  max-width:100% !important;
+  box-sizing:border-box !important;
+  overflow:hidden !important;
+}
+battery-core-card .main-grid,
+battery-core-card .shell.size-compact .main-grid,
+battery-core-card .shell.size-normal .main-grid,
+battery-core-card .shell.size-large .main-grid,
+battery-core-card .shell.size-fullscreen .main-grid {
+  width:100% !important;
+  max-width:100% !important;
+  box-sizing:border-box !important;
+  display:grid !important;
+  grid-template-columns:28% 44% 28% !important;
+  gap:0 !important;
+  overflow:hidden !important;
+}
+battery-core-card .main-grid > section {
+  width:100% !important;
+  max-width:100% !important;
+  min-width:0 !important;
+  box-sizing:border-box !important;
+}
+battery-core-card .side.left {
+  padding-right:8px;
+}
+battery-core-card .side.right {
+  padding-left:8px;
+  overflow:hidden !important;
+}
+battery-core-card .side.right .metric,
+battery-core-card .side.left .metric {
+  width:100% !important;
+  max-width:100% !important;
+  box-sizing:border-box !important;
+}
+battery-core-card .core-wrap {
+  width:100% !important;
+  max-width:100% !important;
+  justify-self:center !important;
+  overflow:visible !important;
+}
+battery-core-card .ring,
+battery-core-card .ticks,
+battery-core-card .orbit,
+battery-core-card .battery-core,
+battery-core-card .energy-streams {
+  left:50% !important;
+  right:auto !important;
+  margin-left:0 !important;
+  transform:translateX(-50%) !important;
+}
+battery-core-card .ring-mid {
+  transform:translateX(-50%) !important;
+}
+battery-core-card .ticks {
+  transform:translateX(-50%) !important;
+}
+battery-core-card .orbit {
+  transform:translateX(-50%) rotate(25deg) !important;
+}
+battery-core-card .orbit-b {
+  transform:translateX(-50%) rotate(-35deg) !important;
+}
+battery-core-card .battery-core {
+  position:absolute !important;
+  top:50% !important;
+  transform:translate(-50%,-50%) !important;
+}
+battery-core-card .energy-streams {
+  transform:translateX(-50%) scale(var(--bc-scale)) !important;
+}
+battery-core-card .status-pill {
+  left:50% !important;
+  right:auto !important;
+  transform:translateX(-50%) !important;
+  white-space:nowrap;
+}
+battery-core-card .power-value,
+battery-core-card .time-value,
+battery-core-card .big-value,
+battery-core-card .mini-grid b {
+  max-width:100% !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+  white-space:nowrap !important;
+}
+battery-core-card .flow {
+  width:100% !important;
+  max-width:100% !important;
+  box-sizing:border-box !important;
+  overflow:hidden !important;
+}
+battery-core-card .flow-node {
+  min-width:0 !important;
+  flex:1 1 0 !important;
+}
+battery-core-card .footer {
+  width:100% !important;
+  max-width:100% !important;
+  box-sizing:border-box !important;
+  overflow:hidden !important;
+}
+
+/* On genuinely narrow cards, stack the information panels below the core. */
+@media (max-width: 700px) {
+  battery-core-card .main-grid,
+  battery-core-card .shell.size-compact .main-grid,
+  battery-core-card .shell.size-normal .main-grid,
+  battery-core-card .shell.size-large .main-grid,
+  battery-core-card .shell.size-fullscreen .main-grid {
+    grid-template-columns:1fr 1fr !important;
+  }
+  battery-core-card .core-wrap {
+    grid-column:1 / -1 !important;
+    grid-row:1 !important;
+  }
+  battery-core-card .side.left {
+    grid-column:1 !important;
+    grid-row:2 !important;
+  }
+  battery-core-card .side.right {
+    grid-column:2 !important;
+    grid-row:2 !important;
+  }
+}
+
+</style>
 
       <div class="scale-stage">
         <div class="scale-target">
