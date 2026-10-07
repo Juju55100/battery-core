@@ -361,6 +361,10 @@ class BatteryCoreCard extends HTMLElement {
 
   _render() {
     this.innerHTML = `
+      <style>
+        ${BATTERY_CORE_STYLE}
+      </style>
+
       <ha-card class="battery-card">
         <div class="shell">
           <div class="top-corner"></div>
