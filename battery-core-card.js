@@ -1,5 +1,5 @@
-/* Battery Core Card — standalone Home Assistant Lovelace card
- * Full animated futuristic battery core with visual editor and auto W/kW conversion.
+/* Battery Core Card v0.3 — standalone Home Assistant Lovelace card
+ * Futuristic battery core with visual editor, adjustable scale and SOC ring.
  */
 
 const BATTERY_CORE_STYLE = `battery-core-card {
@@ -266,6 +266,41 @@ battery-core-card.empty .liquid { box-shadow:none; }
 @keyframes bcArrow { 50% { transform:translateX(6px); } }
 
 
+
+/* USER SCALE — controlled from the Home Assistant editor */
+battery-core-card .scale-stage { width:100%; overflow:hidden; }
+battery-core-card .scale-target {
+  zoom: var(--bc-user-scale, 1);
+  width: calc(100% / var(--bc-user-scale, 1));
+}
+
+/* Real SOC gauge on the outer ring */
+battery-core-card .ring-outer {
+  border:0;
+  padding:9px;
+  background:conic-gradient(
+    from -90deg,
+    #00eaff 0deg,
+    #1689ff var(--bc-soc-angle,0deg),
+    rgba(0,155,255,.12) var(--bc-soc-angle,0deg),
+    rgba(0,155,255,.12) 360deg
+  );
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;
+  mask-composite:exclude;
+  animation:none;
+  box-sizing:border-box;
+}
+battery-core-card.discharging .ring-outer {
+  background:conic-gradient(
+    from -90deg,
+    #ffd84a 0deg,
+    #ff7138 var(--bc-soc-angle,0deg),
+    rgba(255,130,40,.12) var(--bc-soc-angle,0deg),
+    rgba(255,130,40,.12) 360deg
+  );
+}
+
 /* =========================================================
    CARD SIZE PRESETS
    compact / normal / large / fullscreen
@@ -379,7 +414,8 @@ class BatteryCoreCard extends HTMLElement {
       capacity: 29,
       title: "BATTERIE",
       model: "LIFEPO4",
-      size: "compact"
+      size: "compact",
+      scale_percent: 75
     };
   }
 
@@ -396,6 +432,7 @@ class BatteryCoreCard extends HTMLElement {
       model: "LIFEPO4",
       capacity: 29,
       size: "compact",
+      scale_percent: 75,
       battery_soc: config.battery_soc,
       battery_power: config.battery_power,
       time_remaining: config.time_remaining,
@@ -447,6 +484,8 @@ class BatteryCoreCard extends HTMLElement {
         ${BATTERY_CORE_STYLE}
       </style>
 
+      <div class="scale-stage">
+        <div class="scale-target" style="--bc-user-scale:${Math.max(50, Math.min(100, Number(this.config.scale_percent) || 75)) / 100}">
       <ha-card class="battery-card">
         <div class="shell size-${this.config.size || "compact"}">
           <div class="top-corner"></div>
@@ -564,6 +603,8 @@ class BatteryCoreCard extends HTMLElement {
           </footer>
         </div>
       </ha-card>
+        </div>
+      </div>
     `;
   }
 
@@ -620,6 +661,9 @@ class BatteryCoreCard extends HTMLElement {
     set("solar", solar === "—" ? "—" : `${solar} kW`);
     set("house", house === "—" ? "—" : `${house} kW`);
 
+    const shell = this.querySelector(".shell");
+    if (shell) shell.style.setProperty("--bc-soc-angle", `${soc * 3.6}deg`);
+
     const liquid = this.querySelector("#liquid");
     if (liquid) liquid.style.height = `${soc}%`;
     const bar = this.querySelector("#socBar");
@@ -659,6 +703,12 @@ class BatteryCoreCardEditor extends HTMLElement {
             <option value="large" ${this._config.size === "large" ? "selected" : ""}>Grande</option>
             <option value="fullscreen" ${this._config.size === "fullscreen" ? "selected" : ""}>Plein écran</option>
           </select>
+        </label>
+        <label>
+          Échelle : <strong id="scaleValue">${this._config.scale_percent || 75}%</strong>
+          <input type="range" id="scale_percent" min="50" max="100" step="5"
+                 value="${this._config.scale_percent || 75}"
+                 style="width:100%; accent-color:#00d9ff;">
         </label>
         <label>Entité SoC (Batterie %) : <input type="text" id="battery_soc" value="${this._config.battery_soc || ''}" style="width:100%"></label>
         <label>Entité Puissance : <input type="text" id="battery_power" value="${this._config.battery_power || ''}" style="width:100%"></label>
